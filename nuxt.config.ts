@@ -53,7 +53,7 @@ export default defineNuxtConfig({
     }
   },
   
-  // TypeScript configuration - DISABLE strict checking
+  // TypeScript configuration - DISABLE to avoid oxc-parser
   typescript: {
     typeCheck: false
   },
@@ -61,6 +61,11 @@ export default defineNuxtConfig({
   // Build configuration
   build: {
     transpile: ['chart.js']
+  },
+  
+  // Experimental features - DISABLE oxc-parser
+  experimental: {
+    typedPages: false
   },
   
   // Runtime configuration
