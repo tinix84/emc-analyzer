@@ -105,7 +105,7 @@ impl EMCStandard {
         }
     }
 
-    // Standard implementations (same as before)
+    // Standard implementations
     fn cispr22(emc_class: &str) -> Result<Self, String> {
         let mut standard = EMCStandard::new(&format!("CISPR22_Class_{}", emc_class.to_uppercase()));
         
@@ -132,6 +132,24 @@ impl EMCStandard {
         let mut standard = Self::cispr22(emc_class)?;
         standard.name = format!("EN55032_Class_{}", emc_class.to_uppercase());
         Ok(standard)
+    }
+
+    fn ece_r10_conducted_ac_lines() -> Self {
+        let mut standard = EMCStandard::new("ECE_R_10_2012_AC");
+        standard.f_avg_limit_mask = vec![0.15e6, 0.5e6, 0.5e6 + 1.0, 5e6, 5e6 + 1.0, 30e6];
+        standard.dbuv_avg_limit_mask = vec![56.0, 46.0, 46.0, 46.0, 50.0, 50.0];
+        standard.f_qp_limit_mask = Some(standard.f_avg_limit_mask.clone());
+        standard.dbuv_qp_limit_mask = Some(vec![66.0, 56.0, 56.0, 56.0, 60.0, 60.0]);
+        standard
+    }
+
+    fn ece_r10_conducted_dc_lines() -> Self {
+        let mut standard = EMCStandard::new("ECE_R_10_2012_DC");
+        standard.f_avg_limit_mask = vec![0.15e6, 0.5e6, 0.5e6 + 1.0, 30e6];
+        standard.dbuv_avg_limit_mask = vec![66.0, 66.0, 60.0, 60.0];
+        standard.f_qp_limit_mask = Some(standard.f_avg_limit_mask.clone());
+        standard.dbuv_qp_limit_mask = Some(vec![79.0, 79.0, 66.0, 66.0]);
+        standard
     }
 
     fn iec61800_3(emc_class: &str, interface: &str) -> Result<Self, String> {
@@ -186,8 +204,8 @@ fn log_interp(x_points: &[f64], y_points: &[f64], x: f64) -> f64 {
 }
 
 // WASM bindings
-#[wasm_bindgen]
-pub fn init_panic_hook() {
+#[wasm_bindgen(start)]
+pub fn init() {
     console_error_panic_hook::set_once();
 }
 
@@ -196,6 +214,8 @@ pub fn get_emc_standard(standard_name: &str, emc_class: &str, interface: Option<
     let standard = match standard_name {
         "CISPR22" => EMCStandard::cispr22(emc_class),
         "EN55032" => EMCStandard::en55032(emc_class),
+        "ECE_R10_AC" => Ok(EMCStandard::ece_r10_conducted_ac_lines()),
+        "ECE_R10_DC" => Ok(EMCStandard::ece_r10_conducted_dc_lines()),
         "IEC61800_3" => {
             let intf = interface.unwrap_or_else(|| "AC".to_string());
             EMCStandard::iec61800_3(emc_class, &intf)
@@ -295,4 +315,3 @@ pub fn generate_emc_mask(
     
     serde_wasm_bindgen::to_value(&mask).map_err(|e| JsValue::from_str(&e.to_string()))
 }
-
