@@ -1,17 +1,25 @@
+// package.json
 {
+  "name": "emc-analyzer-nuxt",
   "private": true,
-  "type": "module",
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "build:wasm": "cd wasm && wasm-pack build --target web --out-dir ../public/wasm"
   },
   "devDependencies": {
-    "@nuxt/devtools": "^1.0.3",
-    "nuxt": "^3.8.2",
-    "vue": "^3.3.8",
-    "vue-router": "^4.2.5"
+    "@nuxt/devtools": "latest",
+    "@nuxtjs/tailwindcss": "^6.8.4",
+    "nuxt": "^3.8.0",
+    "typescript": "^5.2.0"
+  },
+  "dependencies": {
+    "@pinia/nuxt": "^0.5.1",
+    "@vueuse/nuxt": "^10.5.0",
+    "chart.js": "^4.4.0",
+    "chartjs-adapter-date-fns": "^3.0.0",
+    "vue-chartjs": "^5.2.0"
   }
 }
