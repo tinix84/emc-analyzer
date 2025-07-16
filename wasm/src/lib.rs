@@ -648,4 +648,47 @@ mod tests {
         assert_eq!(stats.mean_amplitude, deserialized.mean_amplitude);
         assert_eq!(stats.violation_count, deserialized.violation_count);
     }
+    
+    #[test]
+    fn test_detailed_output_verification() {
+        // Load a real standard and verify detailed output
+        let standard = EMCStandard::get_standard("CISPR22", "ClassA").unwrap();
+        
+        println!("Standard: {}", standard.name);
+        println!("Description: {}", standard.description);
+        println!("Avg mask points: {}", standard.f_avg_limit_mask.len());
+        
+        // Test interpolation at key frequencies
+        let test_frequencies = vec![200_000.0, 1_000_000.0, 10_000_000.0];
+        for freq in test_frequencies {
+            let result = standard.interp_log(freq);
+            println!("Freq: {:.0} Hz -> Avg: {:.1} dBμV, QP: {:.1} dBμV, PK: {:.1} dBμV", 
+                freq, result.dbuv_avg_limit, result.dbuv_qp_limit, result.dbuv_pk_limit);
+        }
+        
+        // Test mask generation
+        let mask = standard.generate_adaptive_mask(150_000.0, 30_000_000.0, 10);
+        println!("Generated mask with {} avg points", mask.avg.len());
+        
+        for (i, point) in mask.avg.iter().take(3).enumerate() {
+            println!("Mask point {}: {:.0} Hz -> {:.1} dBμV", i, point.frequency, point.amplitude);
+        }
+        
+        // Test statistics
+        let frequencies = vec![500_000.0, 1_000_000.0, 5_000_000.0];
+        let amplitudes = vec![75.0, 70.0, 45.0]; // Mix of pass/fail
+        let stats = standard.analyze_measurement_statistics(&frequencies, &amplitudes);
+        
+        println!("Statistics:");
+        println!("  Mean: {:.1} dBμV", stats.mean_amplitude);
+        println!("  Std: {:.1} dBμV", stats.std_amplitude);
+        println!("  Max: {:.1} dBμV", stats.max_amplitude);
+        println!("  P95: {:.1} dBμV", stats.percentile_95);
+        println!("  Violations: {}", stats.violation_count);
+        println!("  Compliance rate: {:.1}%", stats.compliance_rate);
+        
+        // Assertions
+        assert!(stats.mean_amplitude > 50.0);
+        assert!(stats.violation_count <= frequencies.len());
+    }
 }
