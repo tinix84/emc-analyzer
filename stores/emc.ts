@@ -8,12 +8,12 @@ export const useEMCStore = defineStore('emc', () => {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
-  const loadStandard = async (standardName: string, emcClass: string, interface?: string) => {
+  const loadStandard = async (standardName: string, emcClass: string, interfaceType?: string) => {
     try {
       isLoading.value = true
       error.value = null
       
-      currentStandard.value = getStandard(standardName, emcClass, interface)
+      currentStandard.value = getStandard(standardName, emcClass, interfaceType)
       
       console.log(`Standard "${currentStandard.value.name}" loaded successfully`)
     } catch (err: any) {

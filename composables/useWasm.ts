@@ -26,12 +26,12 @@ export const useWasm = () => {
     }
   }
 
-  const getStandard = (standardName: string, emcClass: string, interface?: string): EMCStandard => {
+  const getStandard = (standardName: string, emcClass: string, interfaceType?: string): EMCStandard => {
     if (!wasmModule.value) {
       throw new Error('WASM module not loaded')
     }
 
-    const result = wasmModule.value.get_emc_standard(standardName, emcClass, interface)
+    const result = wasmModule.value.get_emc_standard(standardName, emcClass, interfaceType)
     return result
   }
 

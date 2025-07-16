@@ -36,7 +36,7 @@
       <div v-if="showInterfaceInput" class="space-y-2">
         <label class="block text-sm font-medium text-gray-700">Interface:</label>
         <select 
-          v-model="interface"
+          v-model="interfaceType"
           class="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
         >
           <option value="AC">AC</option>
@@ -69,7 +69,7 @@ const emcStore = useEMCStore()
 
 const selectedStandard = ref('')
 const emcClass = ref('B')
-const interface = ref('AC')
+const interfaceType = ref('AC')
 
 const showClassInput = computed(() => 
   ['CISPR22', 'EN55032', 'IEC61800_3'].includes(selectedStandard.value)
@@ -81,7 +81,7 @@ const showInterfaceInput = computed(() =>
 
 const onStandardChange = () => {
   emcClass.value = selectedStandard.value === 'IEC61800_3' ? 'C1' : 'B'
-  interface.value = 'AC'
+  interfaceType.value = 'AC'
 }
 
 const loadStandard = async () => {
@@ -91,7 +91,7 @@ const loadStandard = async () => {
     await emcStore.loadStandard(
       selectedStandard.value, 
       emcClass.value, 
-      showInterfaceInput.value ? interface.value : undefined
+      showInterfaceInput.value ? interfaceType.value : undefined
     )
   } catch (error) {
     console.error('Failed to load standard:', error)
