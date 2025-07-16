@@ -1,18 +1,26 @@
 // nuxt.config.ts
 export default defineNuxtConfig({
   devtools: { enabled: true },
+  
   modules: [
     '@nuxtjs/tailwindcss',
     '@pinia/nuxt',
     '@vueuse/nuxt'
   ],
+  
   css: ['~/assets/css/main.css'],
-  ssr: false, // SPA mode for WASM
+  
+  // SPA mode for better WASM support
+  ssr: false,
+  
+  // WASM support
   nitro: {
     experimental: {
       wasm: true
     }
   },
+  
+  // Vite configuration for WASM
   vite: {
     server: {
       fs: {
@@ -21,6 +29,45 @@ export default defineNuxtConfig({
     },
     optimizeDeps: {
       exclude: ['@/wasm/emc_wasm']
+    },
+    // Add WASM support
+    plugins: [],
+    define: {
+      global: 'globalThis'
+    }
+  },
+  
+  // App configuration
+  app: {
+    head: {
+      title: 'EMC Spectrum Analyzer',
+      meta: [
+        { charset: 'utf-8' },
+        { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+        { name: 'description', content: 'EMC compliance analyzer with Rust WebAssembly' },
+        { name: 'keywords', content: 'EMC, spectrum analyzer, compliance, CISPR, EN55032' }
+      ],
+      link: [
+        { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }
+      ]
+    }
+  },
+  
+  // TypeScript configuration
+  typescript: {
+    typeCheck: true
+  },
+  
+  // Build configuration
+  build: {
+    transpile: ['chart.js']
+  },
+  
+  // Runtime configuration
+  runtimeConfig: {
+    public: {
+      appName: 'EMC Analyzer',
+      appVersion: '1.0.0'
     }
   }
 })

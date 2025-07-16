@@ -1,0 +1,59 @@
+{
+  "name": "emc-analyzer",
+  "version": "1.0.0",
+  "description": "EMC Spectrum Analyzer with Nuxt 3 and Rust WebAssembly",
+  "private": true,
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "build:wasm": "cd wasm && wasm-pack build --target web --out-dir ../public/wasm",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint .",
+    "type-check": "nuxt typecheck"
+  },
+  "keywords": [
+    "emc",
+    "spectrum",
+    "analyzer",
+    "nuxt",
+    "webassembly",
+    "rust",
+    "compliance"
+  ],
+  "author": "Your Name <your.email@example.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "@nuxt/devtools": "^1.0.0",
+    "@nuxt/eslint-config": "^0.2.0",
+    "@nuxtjs/tailwindcss": "^6.8.4",
+    "eslint": "^8.54.0",
+    "nuxt": "^3.8.0",
+    "typescript": "^5.2.0"
+  },
+  "dependencies": {
+    "@headlessui/vue": "^1.7.16",
+    "@heroicons/vue": "^2.0.18",
+    "@pinia/nuxt": "^0.5.1",
+    "@vueuse/nuxt": "^10.5.0",
+    "chart.js": "^4.4.0",
+    "chartjs-adapter-date-fns": "^3.0.0",
+    "date-fns": "^2.30.0",
+    "pinia": "^2.1.7",
+    "vue-chartjs": "^5.2.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tinix84/emc-analyzer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/YOUR_USERNAME/emc-analyzer/issues"
+  },
+  "homepage": "https://github.com/YOUR_USERNAME/emc-analyzer#readme"
+}
