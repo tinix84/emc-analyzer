@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pure Vue + WASM Test</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 1000px; 
+            margin: 0 auto; 
+            padding: 20px; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container { 
+            background: rgba(255,255,255,0.1); 
+            padding: 30px; 
+            border-radius: 15px; 
+            backdrop-filter: blur(10px);
+        }
+        button { 
+            background: #4CAF50; 
+            color: white; 
+            padding: 10px 20px; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            margin: 5px;
+            font-size: 16px;
+        }
+        button:hover { background: #45a049; }
+        button:disabled { background: #666; cursor: not-allowed; }
+        .result { 
+            background: rgba(0,0,0,0.2); 
+            padding: 15px; 
+            margin: 10px 0; 
+            border-radius: 5px; 
+            border-left: 4px solid #4CAF50;
+        }
+        .error { border-left-color: #f44336; }
+        .info { border-left-color: #2196F3; }
+        pre { 
+            background: rgba(0,0,0,0.3); 
+            padding: 10px; 
+            border-radius: 5px; 
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="container">
+            <h1>🔬 Pure Vue + WASM Debug</h1>
+            <p>Testing WASM loading without Nuxt framework interference</p>
+            
+            <div style="margin: 20px 0;">
+                <button @click="step1_inspectModule" :disabled="loading">1. Inspect WASM Module</button>
+                <button @click="step2_tryDifferentInit" :disabled="loading">2. Try Different Init Methods</button>
+                <button @click="step3_testSimpleCall" :disabled="loading">3. Test Simple Function Call</button>
+                <button @click="clearLogs">🗑️ Clear Logs</button>
+            </div>
+            
+            <div id="results">
+                <div v-for="(log, index) in logs" :key="index" 
+                     :class="['result', log.type]">
+                    <strong>{{ log.title }}</strong>
+                    <div v-if="log.message" style="margin-top: 5px;">{{ log.message }}</div>
+                    <pre v-if="log.data">{{ log.data }}</pre>
+                </div>
+                
+                <div v-if="logs.length === 0" style="text-align: center; padding: 40px; color: #ccc;">
+                    Click a button above to start debugging
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        const { createApp, ref } = Vue;
+
+        createApp({
+            setup() {
+                const logs = ref([]);
+                const loading = ref(false);
+                const wasmModule = ref(null);
+
+                const addLog = (title, message = '', data = null, type = 'info') => {
+                    logs.value.push({
+                        title,
+                        message,
+                        data: data ? (typeof data === 'string' ? data : JSON.stringify(data, null, 2)) : null,
+                        type
+                    });
+                };
+
+                const clearLogs = () => {
+                    logs.value = [];
+                };
+
+                const step1_inspectModule = async () => {
+                    loading.value = true;
+                    clearLogs();
+                    
+                    try {
+                        addLog("🔍 Step 1: Deep Module Inspection", "Importing WASM module...");
+                        
+                        // Import the module
+                        const wasmImport = await import('./public/wasm/emc_wasm.js');
+                        addLog("✅ Import successful", `Module type: ${typeof wasmImport}`);
+                        
+                        // Inspect all properties
+                        const keys = Object.keys(wasmImport);
+                        addLog("📋 Module keys", `Found ${keys.length} properties`, keys);
+                        
+                        // Inspect each property type
+                        const propertyTypes = {};
+                        keys.forEach(key => {
+                            propertyTypes[key] = typeof wasmImport[key];
+                        });
+                        addLog("🔍 Property types", "", propertyTypes);
+                        
+                        // Special focus on default export
+                        addLog("🎯 Default export analysis", "", {
+                            exists: 'default' in wasmImport,
+                            type: typeof wasmImport.default,
+                            value: wasmImport.default?.toString?.() || wasmImport.default,
+                            isFunction: typeof wasmImport.default === 'function',
+                            hasInit: 'init' in wasmImport,
+                            initType: typeof wasmImport.init
+                        });
+                        
+                        // Look for functions
+                        const functions = keys.filter(key => typeof wasmImport[key] === 'function');
+                        addLog("🔧 Available functions", `Found ${functions.length} functions`, functions);
+                        
+                        // Store for next steps
+                        wasmModule.value = wasmImport;
+                        
+                    } catch (error) {
+                        addLog("❌ Import failed", error.message, error.stack, 'error');
+                    } finally {
+                        loading.value = false;
+                    }
+                };
+
+                const step2_tryDifferentInit = async () => {
+                    loading.value = true;
+                    
+                    if (!wasmModule.value) {
+                        addLog("❌ No module", "Run step 1 first", null, 'error');
+                        loading.value = false;
+                        return;
+                    }
+                    
+                    try {
+                        addLog("🔄 Step 2: Trying Different Initialization Methods");
+                        const wasmImport = wasmModule.value;
+                        
+                        // Method 1: Check if default is a function and call it
+                        if (typeof wasmImport.default === 'function') {
+                            addLog("🎯 Method 1: wasmImport.default() - ASYNC initialization");
+                            try {
+                                const wasmObject = await wasmImport.default();
+                                addLog("✅ Method 1 success - got WASM object!", "", {
+                                    wasmType: typeof wasmObject,
+                                    wasmKeys: Object.keys(wasmObject || {}),
+                                    hasGetEmcStandard: 'get_emc_standard' in (wasmObject || {}),
+                                    hasCalculateEmcLimit: 'calculate_emc_limit' in (wasmObject || {}),
+                                    hasCheckEmcCompliance: 'check_emc_compliance' in (wasmObject || {})
+                                });
+                                
+                                // Store the initialized WASM object
+                                wasmModule.value.wasmObject = wasmObject;
+                                
+                            } catch (e) {
+                                addLog("❌ Method 1 failed", e.message, null, 'error');
+                            }
+                        } else {
+                            addLog("⏭️ Method 1: Skipped (default not a function)");
+                        }
+                        
+                        // Method 2: Check for initSync function
+                        if (typeof wasmImport.initSync === 'function') {
+                            addLog("🎯 Method 2: wasmImport.initSync() - SYNC initialization");
+                            try {
+                                // We need the WASM bytes for initSync
+                                const wasmResponse = await fetch('./public/wasm/emc_wasm_bg.wasm');
+                                const wasmBytes = await wasmResponse.arrayBuffer();
+                                const wasmObject = wasmImport.initSync(wasmBytes);
+                                addLog("✅ Method 2 success - got WASM object!", "", {
+                                    wasmType: typeof wasmObject,
+                                    wasmKeys: Object.keys(wasmObject || {}),
+                                    hasGetEmcStandard: 'get_emc_standard' in (wasmObject || {}),
+                                    hasCalculateEmcLimit: 'calculate_emc_limit' in (wasmObject || {}),
+                                    hasCheckEmcCompliance: 'check_emc_compliance' in (wasmObject || {})
+                                });
+                            } catch (e) {
+                                addLog("❌ Method 2 failed", e.message, null, 'error');
+                            }
+                        } else {
+                            addLog("⏭️ Method 2: Skipped (no initSync function)");
+                        }
+                        
+                        // Method 3: Direct WebAssembly loading
+                        addLog("🎯 Method 3: Direct WebAssembly.instantiateStreaming");
+                        try {
+                            const wasmResponse = await fetch('./public/wasm/emc_wasm_bg.wasm');
+                            const wasmResult = await WebAssembly.instantiateStreaming(wasmResponse);
+                            addLog("✅ Method 3 success", "Direct WASM loading worked", {
+                                exports: Object.keys(wasmResult.instance.exports)
+                            });
+                        } catch (e) {
+                            addLog("❌ Method 3 failed", e.message, null, 'error');
+                        }
+                        
+                    } catch (error) {
+                        addLog("❌ Step 2 failed", error.message, error.stack, 'error');
+                    } finally {
+                        loading.value = false;
+                    }
+                };
+
+                const step3_testSimpleCall = async () => {
+                    loading.value = true;
+                    
+                    if (!wasmModule.value) {
+                        addLog("❌ No module", "Run step 1 first", null, 'error');
+                        loading.value = false;
+                        return;
+                    }
+                    
+                    try {
+                        addLog("🧪 Step 3: Testing Function Calls on Initialized WASM");
+                        const wasmImport = wasmModule.value;
+                        
+                        // Method 1: Get WASM object from default() call
+                        addLog("🔧 Getting WASM object via default()...");
+                        const wasmObject = await wasmImport.default();
+                        
+                        addLog("🔍 WASM Object Analysis", "", {
+                            type: typeof wasmObject,
+                            keys: Object.keys(wasmObject),
+                            functions: Object.keys(wasmObject).filter(key => typeof wasmObject[key] === 'function')
+                        });
+                        
+                        // Test get_emc_standard
+                        if (typeof wasmObject.get_emc_standard === 'function') {
+                            addLog("🧪 Testing get_emc_standard function");
+                            try {
+                                const result = wasmObject.get_emc_standard("CISPR22", "ClassB", null);
+                                addLog("✅ get_emc_standard SUCCESS!", "", result);
+                            } catch (error) {
+                                addLog("❌ get_emc_standard failed", error.message, null, 'error');
+                            }
+                        } else {
+                            addLog("❌ get_emc_standard not found", "Function not available in WASM object", null, 'error');
+                        }
+                        
+                        // Test calculate_emc_limit
+                        if (typeof wasmObject.calculate_emc_limit === 'function') {
+                            addLog("🧪 Testing calculate_emc_limit function");
+                            try {
+                                // First get a standard, then use it for calculation
+                                const standard = wasmObject.get_emc_standard("CISPR22", "ClassB", null);
+                                const standardJson = JSON.stringify(standard);
+                                const result = wasmObject.calculate_emc_limit(standardJson, 100e6); // 100 MHz
+                                addLog("✅ calculate_emc_limit SUCCESS!", "", result);
+                            } catch (error) {
+                                addLog("❌ calculate_emc_limit failed", error.message, null, 'error');
+                            }
+                        } else {
+                            addLog("❌ calculate_emc_limit not found", "Function not available in WASM object", null, 'error');
+                        }
+                        
+                        // Test check_emc_compliance
+                        if (typeof wasmObject.check_emc_compliance === 'function') {
+                            addLog("🧪 Testing check_emc_compliance function");
+                            try {
+                                const standard = wasmObject.get_emc_standard("CISPR22", "ClassB", null);
+                                const standardJson = JSON.stringify(standard);
+                                const frequencies = new Float64Array([100e6, 200e6]); // 100, 200 MHz
+                                const amplitudes = new Float64Array([40, 45]); // dBµV
+                                const result = wasmObject.check_emc_compliance(standardJson, frequencies, amplitudes, "avg");
+                                addLog("✅ check_emc_compliance SUCCESS!", "", result);
+                            } catch (error) {
+                                addLog("❌ check_emc_compliance failed", error.message, null, 'error');
+                            }
+                        } else {
+                            addLog("❌ check_emc_compliance not found", "Function not available in WASM object", null, 'error');
+                        }
+                        
+                        addLog("🎉 ALL TESTS COMPLETED!", "WASM functions are working correctly!");
+                        
+                    } catch (error) {
+                        addLog("❌ Step 3 failed", error.message, error.stack, 'error');
+                    } finally {
+                        loading.value = false;
+                    }
+                };
+
+                return {
+                    logs,
+                    loading,
+                    step1_inspectModule,
+                    step2_tryDifferentInit,
+                    step3_testSimpleCall,
+                    clearLogs
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

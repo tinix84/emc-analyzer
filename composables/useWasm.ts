@@ -22,22 +22,22 @@ export const useWasm = () => {
       // Dynamic import of WASM module
       console.log('📦 Importing WASM module...')
       const wasmImport = await import('/wasm/emc_wasm.js')
-      console.log('✅ WASM module imported:', wasmImport)
+      console.log('✅ WASM module imported with functions:', Object.keys(wasmImport))
       
-      // Initialize WASM module using the default export function
-      console.log('🔧 Calling WASM initialization function...')
-      await wasmImport.default('/wasm/emc_wasm_bg.wasm')
-      console.log('✅ WASM initialized successfully')
+      // Initialize WASM runtime and get the actual WASM object with functions
+      console.log('🔧 Initializing WASM runtime...')
+      const wasmObject = await wasmImport.default() // This returns the object with functions!
+      console.log('✅ WASM runtime initialized, got object with functions:', Object.keys(wasmObject))
       
-      // After initialization, the functions are available on the wasmImport object
-      console.log('✅ Module validation passed, storing module...')
-      wasmModule.value = wasmImport
+      // Store the WASM object (not the import) since functions are on the object
+      console.log('✅ Module validation passed, storing WASM object...')
+      wasmModule.value = wasmObject // Store the initialized object, not the import!
       console.log('✅ wasmModule.value set to:', wasmModule.value)
-      console.log('✅ Available functions:', Object.keys(wasmImport).filter(k => typeof wasmImport[k] === 'function'))
+      console.log('✅ Available functions:', Object.keys(wasmObject).filter(k => typeof wasmObject[k] === 'function'))
       
-      // Verify that the essential functions exist
-      if (!wasmImport.get_emc_standard || typeof wasmImport.get_emc_standard !== 'function') {
-        throw new Error('get_emc_standard function not available')
+      // Verify that the essential functions exist on the WASM object
+      if (!wasmObject.get_emc_standard || typeof wasmObject.get_emc_standard !== 'function') {
+        throw new Error('get_emc_standard function not available on WASM object')
       }
       
       console.log('🎉 WASM module stored and ready!')
