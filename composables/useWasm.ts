@@ -24,66 +24,33 @@ export const useWasm = () => {
       const wasmImport = await import('/wasm/emc_wasm.js')
       console.log('✅ WASM module imported:', wasmImport)
       
-      console.log('🚀 Initializing WASM...')
-      // Check what's actually in the imported module
-      console.log('📋 Module exports:', Object.keys(wasmImport))
-      console.log('📋 Default export type:', typeof wasmImport.default)
-      console.log('📋 Default export:', wasmImport.default)
+      // Initialize WASM module using the default export function
+      console.log('🔧 Calling WASM initialization function...')
+      await wasmImport.default('/wasm/emc_wasm_bg.wasm')
+      console.log('✅ WASM initialized successfully')
       
-      // Try different ways to initialize based on what's available
-      let initResult;
-      if (typeof wasmImport.default === 'function') {
-        console.log('🔧 Using default export as function')
-        initResult = await wasmImport.default('/wasm/emc_wasm_bg.wasm')
-      } else if (wasmImport.init && typeof wasmImport.init === 'function') {
-        console.log('🔧 Using init function')
-        initResult = await wasmImport.init('/wasm/emc_wasm_bg.wasm')
-      } else {
-        console.log('🔧 Default export is not a function, using module directly')
-        initResult = wasmImport
-      }
-      
-      console.log('✅ WASM initialized successfully:', initResult)
-      
-      // Store the module with its exported functions
-      // Check if functions are directly on the import or on the init result
-      const moduleToStore = wasmImport.get_emc_standard ? wasmImport : initResult
+      // After initialization, the functions are available on the wasmImport object
+      console.log('✅ Module validation passed, storing module...')
+      wasmModule.value = wasmImport
+      console.log('✅ wasmModule.value set to:', wasmModule.value)
+      console.log('✅ Available functions:', Object.keys(wasmImport).filter(k => typeof wasmImport[k] === 'function'))
       
       // Verify that the essential functions exist
-      if (!moduleToStore || typeof moduleToStore.get_emc_standard !== 'function') {
-        console.error('❌ Module validation failed!')
-        console.error('❌ moduleToStore:', moduleToStore)
-        console.error('❌ wasmImport keys:', Object.keys(wasmImport))
-        console.error('❌ initResult keys:', Object.keys(initResult || {}))
-        throw new Error('WASM module does not have expected functions. Available functions: ' + 
-          Object.keys(moduleToStore || {}).filter(k => typeof (moduleToStore || {})[k] === 'function').join(', '))
+      if (!wasmImport.get_emc_standard || typeof wasmImport.get_emc_standard !== 'function') {
+        throw new Error('get_emc_standard function not available')
       }
       
-      console.log('✅ Module validation passed, storing module...')
-      wasmModule.value = moduleToStore
-      console.log('✅ wasmModule.value set to:', wasmModule.value)
-      console.log('✅ wasmModule.value type:', typeof wasmModule.value)
-      console.log('🎉 WASM module stored with functions:', Object.keys(moduleToStore).filter(k => typeof moduleToStore[k] === 'function'))
-      
-      // Final verification
-      console.log('🔍 Final check - wasmModule.value:', wasmModule.value)
-      console.log('🔍 Final check - wasmModule.value !== null:', wasmModule.value !== null)
+      console.log('🎉 WASM module stored and ready!')
     } catch (err: any) {
       error.value = `Failed to load WASM: ${err.message}`
       console.error('❌ WASM loading error:', err)
-      console.error('❌ Error stack:', err.stack)
-      console.error('❌ wasmModule.value in catch:', wasmModule.value)
     } finally {
       isLoading.value = false
-      console.log('🔄 WASM loading finished, isLoading:', isLoading.value)
-      console.log('🔄 Final wasmModule.value in finally:', wasmModule.value)
     }
   }
 
   const getStandard = (standardName: string, emcClass: string, interfaceType?: string): EMCStandard => {
     console.log('🔍 Getting standard called with:', { standardName, emcClass, interfaceType })
-    console.log('🔍 wasmModule.value:', wasmModule.value)
-    console.log('🔍 wasmModule.value type:', typeof wasmModule.value)
     
     if (!wasmModule.value) {
       console.error('❌ WASM module is null or undefined')
@@ -96,9 +63,8 @@ export const useWasm = () => {
       throw new Error('get_emc_standard function not available')
     }
 
-    console.log('🔍 Getting standard:', { standardName, emcClass, interfaceType })
+    console.log('🔍 Calling WASM get_emc_standard...')
     try {
-      // Call the exported function from the WASM module
       const result = wasmModule.value.get_emc_standard(standardName, emcClass, interfaceType || null)
       console.log('✅ Standard result:', result)
       return result

@@ -315,3 +315,83 @@ pub fn generate_emc_mask(
     
     serde_wasm_bindgen::to_value(&mask).map_err(|e| JsValue::from_str(&e.to_string()))
 }
+
+#[cfg(test)]
+pub mod test_standalone {
+    use super::*;
+
+    #[test]
+    fn test_log_interp() {
+        let x_points = vec![1.0, 10.0, 100.0, 1000.0];
+        let y_points = vec![0.0, 1.0, 2.0, 3.0];
+        let x = 50.0;
+        let expected = 1.69897; // log10(50) ≈ 1.69897
+        let result = log_interp(&x_points, &y_points, x);
+        assert!((result - expected).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_interp_log() {
+        let standard = EMCStandard {
+            name: "Test_Standard".to_string(),
+            f_avg_limit_mask: vec![0.15e6, 0.5e6, 30e6],
+            dbuv_avg_limit_mask: vec![66.0, 60.0, 60.0],
+            f_qp_limit_mask: None,
+            dbuv_qp_limit_mask: None,
+            f_pk_limit_mask: None,
+            dbuv_pk_limit_mask: None,
+        };
+
+        let frequency = 0.3e6;
+        let result = standard.interp_log(frequency);
+        
+        assert!((result.avg_limit - 10.0).abs() < 1e-5);
+        assert!((result.qp_limit - 10.0).abs() < 1e-5);
+        assert!((result.pk_limit - 10.0).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_cispr22() {
+        let standard = EMCStandard::cispr22("A").unwrap();
+        
+        assert_eq!(standard.name, "CISPR22_Class_A");
+        assert_eq!(standard.f_avg_limit_mask.len(), 4);
+        assert_eq!(standard.dbuv_avg_limit_mask.len(), 4);
+    }
+
+    #[test]
+    fn test_en55032() {
+        let standard = EMCStandard::en55032("B").unwrap();
+        
+        assert_eq!(standard.name, "EN55032_Class_B");
+        assert_eq!(standard.f_avg_limit_mask.len(), 6);
+        assert_eq!(standard.dbuv_avg_limit_mask.len(), 6);
+    }
+
+    #[test]
+    fn test_ece_r10_conducted_ac_lines() {
+        let standard = EMCStandard::ece_r10_conducted_ac_lines();
+        
+        assert_eq!(standard.name, "ECE_R_10_2012_AC");
+        assert_eq!(standard.f_avg_limit_mask.len(), 6);
+        assert_eq!(standard.dbuv_avg_limit_mask.len(), 6);
+    }
+
+    #[test]
+    fn test_ece_r10_conducted_dc_lines() {
+        let standard = EMCStandard::ece_r10_conducted_dc_lines();
+        
+        assert_eq!(standard.name, "ECE_R_10_2012_DC");
+        assert_eq!(standard.f_avg_limit_mask.len(), 4);
+        assert_eq!(standard.dbuv_avg_limit_mask.len(), 4);
+    }
+
+    #[test]
+    fn test_iec61800_3() {
+        let standard = EMCStandard::iec61800_3("C1", "AC").unwrap();
+        
+        assert_eq!(standard.name, "IEC61800_3_Class_C1");
+        assert_eq!(standard.f_avg_limit_mask.len(), 4);
+        assert_eq!(standard.dbuv_avg_limit_mask.len(), 4);
+    }
+}
