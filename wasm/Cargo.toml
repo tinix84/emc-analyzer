@@ -19,3 +19,6 @@ web-sys = { version = "0.3", features = [
   "FileReader",
   "Blob",
 ] }
+
+# Minimal mathematical libraries (WASM compatible)
+num-traits = { version = "0.2", default-features = false }

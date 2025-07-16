@@ -1,0 +1,186 @@
+{
+  "standards": {
+    "CISPR22": {
+      "ClassA": {
+        "name": "CISPR 22 Class A",
+        "description": "Conducted emissions limits for Class A equipment",
+        "avg_mask": [
+          [150000, 79],
+          [500000, 73],
+          [500001, 73],
+          [30000000, 40],
+          [100000000, 40],
+          [100000001, 47]
+        ],
+        "qp_mask": [
+          [150000, 84],
+          [500000, 78],
+          [500001, 78],
+          [30000000, 46],
+          [100000001, 46],
+          [1000000000, 53]
+        ],
+        "pk_mask": [
+          [150000, 95],
+          [500000, 89],
+          [500001, 89],
+          [30000000, 56],
+          [10000001, 56],
+          [1000000000, 63]
+        ]
+      },
+      "ClassB": {
+        "name": "CISPR 22 Class B",
+        "description": "Conducted emissions limits for Class B equipment",
+        "avg_mask": [
+          [150000, 66],
+          [500000, 56],
+          [5000000, 56],
+          [30000000, 30],
+          [100000000, 30],
+          [1000000000, 37]
+        ],
+        "qp_mask": [
+          [150000, 72],
+          [500000, 62],
+          [5000000, 62],
+          [30000000, 36],
+          [100000000, 36],
+          [1000000000, 43]
+        ],
+        "pk_mask": [
+          [150000, 84],
+          [500000, 74],
+          [5000000, 74],
+          [30000000, 46],
+          [100000000, 46],
+          [1000000000, 53]
+        ]
+      }
+    },
+    "EN55032": {
+      "ClassA": {
+        "name": "EN 55032 Class A",
+        "description": "Multimedia equipment emissions - Class A",
+        "avg_mask": [
+          [150000, 79],
+          [500000, 73],
+          [5000000, 73],
+          [30000000, 40],
+          [100000000, 40],
+          [1000000000, 47]
+        ],
+        "qp_mask": [
+          [150000, 84],
+          [500000, 78],
+          [5000000, 78],
+          [30000000, 46],
+          [100000000, 46],
+          [1000000000, 53]
+        ]
+      },
+      "ClassB": {
+        "name": "EN 55032 Class B",
+        "description": "Multimedia equipment emissions - Class B",
+        "avg_mask": [
+          [150000, 66],
+          [500000, 56],
+          [5000000, 56],
+          [30000000, 30],
+          [100000000, 30],
+          [1000000000, 37]
+        ],
+        "qp_mask": [
+          [150000, 72],
+          [500000, 62],
+          [5000000, 62],
+          [30000000, 36],
+          [100000000, 36],
+          [1000000000, 43]
+        ]
+      }
+    },
+    "ECE_R10_AC": {
+      "Class3": {
+        "name": "ECE R10 Class 3 AC Lines",
+        "description": "Automotive conducted emissions - AC power lines",
+        "avg_mask": [
+          [150000, 80],
+          [300000, 80],
+          [1400000, 70],
+          [2800000, 60],
+          [30000000, 60],
+          [54000000, 60],
+          [108000000, 55]
+        ]
+      },
+      "Class4": {
+        "name": "ECE R10 Class 4 AC Lines",
+        "description": "Automotive conducted emissions - AC power lines (Class 4)",
+        "avg_mask": [
+          [150000, 85],
+          [300000, 85],
+          [1400000, 75],
+          [2800000, 65],
+          [30000000, 65],
+          [54000000, 65],
+          [108000000, 60]
+        ]
+      }
+    },
+    "ECE_R10_DC": {
+      "Class3": {
+        "name": "ECE R10 Class 3 DC Lines",
+        "description": "Automotive conducted emissions - DC power lines",
+        "avg_mask": [
+          [150000, 95],
+          [300000, 95],
+          [1400000, 85],
+          [2800000, 75],
+          [30000000, 75],
+          [54000000, 75],
+          [108000000, 70]
+        ]
+      },
+      "Class4": {
+        "name": "ECE R10 Class 4 DC Lines",
+        "description": "Automotive conducted emissions - DC power lines (Class 4)",
+        "avg_mask": [
+          [150000, 100],
+          [300000, 100],
+          [1400000, 90],
+          [2800000, 80],
+          [30000000, 80],
+          [54000000, 80],
+          [108000000, 75]
+        ]
+      }
+    },
+    "IEC61800_3": {
+      "ClassA": {
+        "name": "IEC 61800-3 Class A",
+        "description": "Variable speed drives - Class A",
+        "avg_mask": [
+          [150000, 79],
+          [500000, 73],
+          [5000000, 73],
+          [30000000, 40],
+          [100000000, 40],
+          [1000000000, 47]
+        ]
+      },
+      "ClassB": {
+        "name": "IEC 61800-3 Class B",
+        "description": "Variable speed drives - Class B",
+        "avg_mask": [
+          [150000, 66],
+          [500000, 56],
+          [5000000, 56],
+          [30000000, 30],
+          [100000000, 30],
+          [1000000000, 37]
+        ]
+      }
+    }
+  }
+}

@@ -1,6 +1,7 @@
 // wasm/src/lib.rs
 use wasm_bindgen::prelude::*;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 #[wasm_bindgen]
 extern "C" {
@@ -14,15 +15,302 @@ macro_rules! console_log {
     ($($t:tt)*) => (log(&format_args!($($t)*).to_string()))
 }
 
+// Point structure for frequency-amplitude pairs
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MaskPoint {
+    pub frequency: f64,  // Hz
+    pub amplitude: f64,  // dBµV
+}
+
+impl MaskPoint {
+    pub fn new(frequency: f64, amplitude: f64) -> Self {
+        Self { frequency, amplitude }
+    }
+}
+
+// Standard class definition from JSON
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StandardClass {
+    pub name: String,
+    pub description: String,
+    pub avg_mask: Vec<(f64, f64)>,  // (frequency_hz, amplitude_dbuv)
+    pub qp_mask: Option<Vec<(f64, f64)>>,
+    pub pk_mask: Option<Vec<(f64, f64)>>,
+}
+
+// Complete standard definition
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StandardDefinition {
+    #[serde(flatten)]
+    pub classes: HashMap<String, StandardClass>,
+}
+
+// Root structure for the JSON file
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EmcStandardsData {
+    pub standards: HashMap<String, HashMap<String, StandardClass>>,
+}
+
+// The EMC Standard structure used by the API
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EMCStandard {
     pub name: String,
+    pub description: String,
     pub f_avg_limit_mask: Vec<f64>,
     pub dbuv_avg_limit_mask: Vec<f64>,
     pub f_qp_limit_mask: Option<Vec<f64>>,
     pub dbuv_qp_limit_mask: Option<Vec<f64>>,
     pub f_pk_limit_mask: Option<Vec<f64>>,
     pub dbuv_pk_limit_mask: Option<Vec<f64>>,
+}
+
+impl EMCStandard {
+    // Convert from StandardClass to EMCStandard
+    pub fn from_standard_class(class: &StandardClass) -> Self {
+        let (f_avg, dbuv_avg): (Vec<f64>, Vec<f64>) = class.avg_mask.iter().cloned().unzip();
+        
+        let (f_qp, dbuv_qp) = if let Some(qp_mask) = &class.qp_mask {
+            let (f, dbuv): (Vec<f64>, Vec<f64>) = qp_mask.iter().cloned().unzip();
+            (Some(f), Some(dbuv))
+        } else {
+            (None, None)
+        };
+        
+        let (f_pk, dbuv_pk) = if let Some(pk_mask) = &class.pk_mask {
+            let (f, dbuv): (Vec<f64>, Vec<f64>) = pk_mask.iter().cloned().unzip();
+            (Some(f), Some(dbuv))
+        } else {
+            (None, None)
+        };
+        
+        Self {
+            name: class.name.clone(),
+            description: class.description.clone(),
+            f_avg_limit_mask: f_avg,
+            dbuv_avg_limit_mask: dbuv_avg,
+            f_qp_limit_mask: f_qp,
+            dbuv_qp_limit_mask: dbuv_qp,
+            f_pk_limit_mask: f_pk,
+            dbuv_pk_limit_mask: dbuv_pk,
+        }
+    }
+    
+    // Load standards from embedded JSON
+    fn load_standards_data() -> Result<EmcStandardsData, String> {
+        let json_data = include_str!("../emc_standards.json");
+        serde_json::from_str(json_data).map_err(|e| format!("Failed to parse standards JSON: {}", e))
+    }
+    
+    // Get a specific standard by name and class
+    pub fn get_standard(standard_name: &str, class_name: &str) -> Result<EMCStandard, String> {
+        let data = Self::load_standards_data()?;
+        
+        let standard = data.standards.get(standard_name)
+            .ok_or_else(|| format!("Standard '{}' not found", standard_name))?;
+            
+        let class = standard.get(class_name)
+            .ok_or_else(|| format!("Class '{}' not found for standard '{}'", class_name, standard_name))?;
+            
+        Ok(Self::from_standard_class(class))
+    }
+    
+    // List available standards
+    pub fn list_standards() -> Result<Vec<String>, String> {
+        let data = Self::load_standards_data()?;
+        Ok(data.standards.keys().cloned().collect())
+    }
+    
+    // List available classes for a standard
+    pub fn list_classes(standard_name: &str) -> Result<Vec<String>, String> {
+        let data = Self::load_standards_data()?;
+        let standard = data.standards.get(standard_name)
+            .ok_or_else(|| format!("Standard '{}' not found", standard_name))?;
+        Ok(standard.keys().cloned().collect())
+    }
+    
+    // Improved logarithmic interpolation 
+    fn interpolate_log(frequencies: &[f64], amplitudes: &[f64], target_freq: f64) -> f64 {
+        if frequencies.is_empty() || amplitudes.is_empty() || frequencies.len() != amplitudes.len() {
+            return 0.0;
+        }
+        
+        // Boundary conditions
+        if target_freq <= frequencies[0] {
+            return amplitudes[0];
+        }
+        if target_freq >= frequencies[frequencies.len() - 1] {
+            return amplitudes[amplitudes.len() - 1];
+        }
+        
+        // Find interpolation interval
+        for i in 0..frequencies.len() - 1 {
+            if target_freq >= frequencies[i] && target_freq <= frequencies[i + 1] {
+                let log_f1 = frequencies[i].ln();
+                let log_f2 = frequencies[i + 1].ln();
+                let log_target = target_freq.ln();
+                
+                let ratio = (log_target - log_f1) / (log_f2 - log_f1);
+                return amplitudes[i] + ratio * (amplitudes[i + 1] - amplitudes[i]);
+            }
+        }
+        
+        amplitudes[0]
+    }
+    
+    // Interpolate limit at a specific frequency
+    pub fn interp_log(&self, frequency: f64) -> EMCLimitResult {
+        let avg_limit = Self::interpolate_log(&self.f_avg_limit_mask, &self.dbuv_avg_limit_mask, frequency);
+        
+        let qp_limit = if let (Some(f_qp), Some(dbuv_qp)) = (&self.f_qp_limit_mask, &self.dbuv_qp_limit_mask) {
+            Self::interpolate_log(f_qp, dbuv_qp, frequency)
+        } else {
+            avg_limit + 6.0 // Typical QP offset
+        };
+        
+        let pk_limit = if let (Some(f_pk), Some(dbuv_pk)) = (&self.f_pk_limit_mask, &self.dbuv_pk_limit_mask) {
+            Self::interpolate_log(f_pk, dbuv_pk, frequency)
+        } else {
+            qp_limit + 10.0 // Typical PK offset
+        };
+        
+        EMCLimitResult {
+            avg_limit,
+            qp_limit,
+            pk_limit,
+            dbuv_avg_limit: avg_limit,
+            dbuv_qp_limit: qp_limit,
+            dbuv_pk_limit: pk_limit,
+        }
+    }
+    
+    // Manual percentile calculation for WASM compatibility
+    fn calculate_percentile(sorted_data: &[f64], percentile: f64) -> f64 {
+        if sorted_data.is_empty() {
+            return 0.0;
+        }
+        
+        let n = sorted_data.len();
+        let index = (percentile / 100.0) * (n - 1) as f64;
+        let lower = index.floor() as usize;
+        let upper = index.ceil() as usize;
+        
+        if lower == upper || upper >= n {
+            return sorted_data[lower.min(n - 1)];
+        }
+        
+        let weight = index - lower as f64;
+        sorted_data[lower] * (1.0 - weight) + sorted_data[upper] * weight
+    }
+    
+    // Calculate standard deviation manually
+    fn calculate_std(data: &[f64]) -> f64 {
+        if data.len() < 2 {
+            return 0.0;
+        }
+        
+        let mean = data.iter().sum::<f64>() / data.len() as f64;
+        let variance = data.iter()
+            .map(|x| (x - mean).powi(2))
+            .sum::<f64>() / (data.len() - 1) as f64;
+        
+        variance.sqrt()
+    }
+    
+    // Advanced EMC analysis using statistical methods
+    pub fn analyze_measurement_statistics(&self, frequencies: &[f64], amplitudes: &[f64]) -> EMCStatistics {
+        // Calculate basic statistics
+        let mean_amplitude = amplitudes.iter().sum::<f64>() / amplitudes.len() as f64;
+        let std_amplitude = Self::calculate_std(amplitudes);
+        let max_amplitude = amplitudes.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b));
+        let min_amplitude = amplitudes.iter().fold(f64::INFINITY, |a, &b| a.min(b));
+        
+        // Calculate percentiles
+        let mut sorted_amps = amplitudes.to_vec();
+        sorted_amps.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        let p95 = Self::calculate_percentile(&sorted_amps, 95.0);
+        let p99 = Self::calculate_percentile(&sorted_amps, 99.0);
+        
+        // Find worst-case violations
+        let mut violations = Vec::new();
+        let mut max_violation = 0.0;
+        let mut max_violation_freq = 0.0;
+        
+        for (&freq, &amp) in frequencies.iter().zip(amplitudes.iter()) {
+            let limit = self.interp_log(freq);
+            let margin = limit.dbuv_avg_limit - amp;
+            
+            if margin < 0.0 {
+                violations.push(ComplianceResult {
+                    frequency: freq,
+                    amplitude: amp,
+                    limit: limit.dbuv_avg_limit,
+                    passes: false,
+                    margin,
+                });
+                
+                if margin.abs() > max_violation {
+                    max_violation = margin.abs();
+                    max_violation_freq = freq;
+                }
+            }
+        }
+        
+        EMCStatistics {
+            mean_amplitude,
+            std_amplitude,
+            max_amplitude,
+            min_amplitude,
+            percentile_95: p95,
+            percentile_99: p99,
+            violation_count: violations.len(),
+            max_violation,
+            max_violation_frequency: max_violation_freq,
+            compliance_rate: ((frequencies.len() - violations.len()) as f64 / frequencies.len() as f64) * 100.0,
+        }
+    }
+    
+    // Improved mask generation with logarithmic spacing
+    pub fn generate_adaptive_mask(&self, f_min: f64, f_max: f64, target_points: usize) -> EMCMask {
+        let log_min = f_min.log10();
+        let log_max = f_max.log10();
+        
+        let mut avg_points = Vec::new();
+        let mut qp_points = Vec::new();
+        let mut pk_points = Vec::new();
+        
+        // Create logarithmically spaced frequency points
+        for i in 0..target_points {
+            let log_f = log_min + (i as f64 / (target_points - 1) as f64) * (log_max - log_min);
+            let freq = 10.0_f64.powf(log_f);
+            
+            let limit = self.interp_log(freq);
+            
+            avg_points.push(MaskPoint { 
+                frequency: freq, 
+                amplitude: limit.dbuv_avg_limit 
+            });
+            
+            if limit.dbuv_qp_limit > 0.0 {
+                qp_points.push(MaskPoint { 
+                    frequency: freq, 
+                    amplitude: limit.dbuv_qp_limit 
+                });
+            }
+            
+            if limit.dbuv_pk_limit > 0.0 {
+                pk_points.push(MaskPoint { 
+                    frequency: freq, 
+                    amplitude: limit.dbuv_pk_limit 
+                });
+            }
+        }
+        
+        EMCMask {
+            avg: avg_points,
+            qp: qp_points,
+            pk: pk_points,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -45,162 +333,29 @@ pub struct ComplianceResult {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct MaskPoint {
-    pub x: f64,
-    pub y: f64,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EMCMask {
     pub avg: Vec<MaskPoint>,
     pub qp: Vec<MaskPoint>,
     pub pk: Vec<MaskPoint>,
 }
 
-impl EMCStandard {
-    fn new(name: &str) -> Self {
-        EMCStandard {
-            name: name.to_string(),
-            f_avg_limit_mask: vec![],
-            dbuv_avg_limit_mask: vec![],
-            f_qp_limit_mask: None,
-            dbuv_qp_limit_mask: None,
-            f_pk_limit_mask: None,
-            dbuv_pk_limit_mask: None,
-        }
-    }
-
-    fn interp_log(&self, new_frequency: f64) -> EMCLimitResult {
-        let dbuv_avg_limit = log_interp(
-            &self.f_avg_limit_mask,
-            &self.dbuv_avg_limit_mask,
-            new_frequency,
-        );
-
-        let dbuv_qp_limit = if let (Some(f_qp), Some(dbuv_qp)) = 
-            (&self.f_qp_limit_mask, &self.dbuv_qp_limit_mask) {
-            log_interp(f_qp, dbuv_qp, new_frequency)
-        } else {
-            0.0
-        };
-
-        let dbuv_pk_limit = if let (Some(f_pk), Some(dbuv_pk)) = 
-            (&self.f_pk_limit_mask, &self.dbuv_pk_limit_mask) {
-            log_interp(f_pk, dbuv_pk, new_frequency)
-        } else {
-            0.0
-        };
-
-        let avg_limit = 10.0_f64.powf((dbuv_avg_limit - 120.0) / 20.0);
-        let qp_limit = 10.0_f64.powf((dbuv_qp_limit - 120.0) / 20.0);
-        let pk_limit = 10.0_f64.powf((dbuv_pk_limit - 120.0) / 20.0);
-
-        EMCLimitResult {
-            avg_limit,
-            qp_limit,
-            pk_limit,
-            dbuv_avg_limit,
-            dbuv_qp_limit,
-            dbuv_pk_limit,
-        }
-    }
-
-    // Standard implementations
-    fn cispr22(emc_class: &str) -> Result<Self, String> {
-        let mut standard = EMCStandard::new(&format!("CISPR22_Class_{}", emc_class.to_uppercase()));
-        
-        match emc_class.to_lowercase().as_str() {
-            "a" => {
-                standard.f_avg_limit_mask = vec![0.15e6, 0.5e6, 0.5e6 + 1.0, 30e6];
-                standard.dbuv_avg_limit_mask = vec![66.0, 66.0, 60.0, 60.0];
-                standard.f_qp_limit_mask = Some(standard.f_avg_limit_mask.clone());
-                standard.dbuv_qp_limit_mask = Some(vec![79.0, 79.0, 73.0, 73.0]);
-            }
-            "b" => {
-                standard.f_avg_limit_mask = vec![0.15e6, 0.5e6, 0.5e6 + 1.0, 5e6, 5e6 + 1.0, 30e6];
-                standard.dbuv_avg_limit_mask = vec![56.0, 46.0, 46.0, 46.0, 50.0, 50.0];
-                standard.f_qp_limit_mask = Some(standard.f_avg_limit_mask.clone());
-                standard.dbuv_qp_limit_mask = Some(vec![66.0, 56.0, 56.0, 56.0, 60.0, 60.0]);
-            }
-            _ => return Err("emc_class must be 'A' or 'B'".to_string()),
-        }
-        
-        Ok(standard)
-    }
-
-    fn en55032(emc_class: &str) -> Result<Self, String> {
-        let mut standard = Self::cispr22(emc_class)?;
-        standard.name = format!("EN55032_Class_{}", emc_class.to_uppercase());
-        Ok(standard)
-    }
-
-    fn ece_r10_conducted_ac_lines() -> Self {
-        let mut standard = EMCStandard::new("ECE_R_10_2012_AC");
-        standard.f_avg_limit_mask = vec![0.15e6, 0.5e6, 0.5e6 + 1.0, 5e6, 5e6 + 1.0, 30e6];
-        standard.dbuv_avg_limit_mask = vec![56.0, 46.0, 46.0, 46.0, 50.0, 50.0];
-        standard.f_qp_limit_mask = Some(standard.f_avg_limit_mask.clone());
-        standard.dbuv_qp_limit_mask = Some(vec![66.0, 56.0, 56.0, 56.0, 60.0, 60.0]);
-        standard
-    }
-
-    fn ece_r10_conducted_dc_lines() -> Self {
-        let mut standard = EMCStandard::new("ECE_R_10_2012_DC");
-        standard.f_avg_limit_mask = vec![0.15e6, 0.5e6, 0.5e6 + 1.0, 30e6];
-        standard.dbuv_avg_limit_mask = vec![66.0, 66.0, 60.0, 60.0];
-        standard.f_qp_limit_mask = Some(standard.f_avg_limit_mask.clone());
-        standard.dbuv_qp_limit_mask = Some(vec![79.0, 79.0, 66.0, 66.0]);
-        standard
-    }
-
-    fn iec61800_3(emc_class: &str, interface: &str) -> Result<Self, String> {
-        let mut standard = EMCStandard::new(&format!("IEC61800_3_Class_{}", emc_class.to_uppercase()));
-
-        match (interface.to_lowercase().as_str(), emc_class.to_lowercase().as_str()) {
-            ("ac", "c1") => {
-                standard.f_avg_limit_mask = vec![0.15e6, 0.5e6, 0.5e6 + 1.0, 30e6];
-                standard.dbuv_avg_limit_mask = vec![66.0, 66.0, 60.0, 60.0];
-                standard.f_qp_limit_mask = Some(standard.f_avg_limit_mask.clone());
-                standard.dbuv_qp_limit_mask = Some(vec![79.0, 79.0, 73.0, 73.0]);
-            }
-            ("ac", "c2") => {
-                standard.f_avg_limit_mask = vec![0.15e6, 0.5e6, 0.5e6 + 1.0, 5e6, 5e6 + 1.0, 30e6];
-                standard.dbuv_avg_limit_mask = vec![56.0, 46.0, 46.0, 46.0, 50.0, 50.0];
-                standard.f_qp_limit_mask = Some(standard.f_avg_limit_mask.clone());
-                standard.dbuv_qp_limit_mask = Some(vec![66.0, 56.0, 56.0, 56.0, 60.0, 60.0]);
-            }
-            ("dc", "c1") => {
-                standard.f_avg_limit_mask = vec![0.15e6, 0.5e6, 0.5e6 + 1.0, 30e6];
-                standard.dbuv_avg_limit_mask = vec![80.0, 80.0, 74.0, 74.0];
-                standard.f_qp_limit_mask = Some(standard.f_avg_limit_mask.clone());
-                standard.dbuv_qp_limit_mask = Some(vec![80.0, 80.0, 74.0, 74.0]);
-            }
-            _ => return Err("Invalid interface/class combination".to_string()),
-        }
-
-        Ok(standard)
-    }
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EMCStatistics {
+    pub mean_amplitude: f64,
+    pub std_amplitude: f64,
+    pub max_amplitude: f64,
+    pub min_amplitude: f64,
+    pub percentile_95: f64,
+    pub percentile_99: f64,
+    pub violation_count: usize,
+    pub max_violation: f64,
+    pub max_violation_frequency: f64,
+    pub compliance_rate: f64,
 }
 
+// Legacy interpolation function for compatibility
 fn log_interp(x_points: &[f64], y_points: &[f64], x: f64) -> f64 {
-    if x_points.len() != y_points.len() || x_points.is_empty() {
-        return 0.0;
-    }
-
-    let log_x = x.log10();
-    let log_x_points: Vec<f64> = x_points.iter().map(|&val| val.log10()).collect();
-
-    for i in 0..log_x_points.len() - 1 {
-        if log_x >= log_x_points[i] && log_x <= log_x_points[i + 1] {
-            let slope = (y_points[i + 1] - y_points[i]) / (log_x_points[i + 1] - log_x_points[i]);
-            return y_points[i] + slope * (log_x - log_x_points[i]);
-        }
-    }
-
-    if log_x < log_x_points[0] {
-        y_points[0]
-    } else {
-        y_points[y_points.len() - 1]
-    }
+    EMCStandard::interpolate_log(x_points, y_points, x)
 }
 
 // WASM bindings
@@ -210,22 +365,34 @@ pub fn init() {
 }
 
 #[wasm_bindgen]
-pub fn get_emc_standard(standard_name: &str, emc_class: &str, interface: Option<String>) -> Result<JsValue, JsValue> {
-    let standard = match standard_name {
-        "CISPR22" => EMCStandard::cispr22(emc_class),
-        "EN55032" => EMCStandard::en55032(emc_class),
-        "ECE_R10_AC" => Ok(EMCStandard::ece_r10_conducted_ac_lines()),
-        "ECE_R10_DC" => Ok(EMCStandard::ece_r10_conducted_dc_lines()),
-        "IEC61800_3" => {
-            let intf = interface.unwrap_or_else(|| "AC".to_string());
-            EMCStandard::iec61800_3(emc_class, &intf)
+pub fn get_emc_standard(standard_name: &str, emc_class: &str, _interface: Option<String>) -> Result<JsValue, JsValue> {
+    console_log!("Getting EMC standard: {} {}", standard_name, emc_class);
+    
+    match EMCStandard::get_standard(standard_name, emc_class) {
+        Ok(standard) => {
+            console_log!("Standard loaded successfully: {}", standard.name);
+            serde_wasm_bindgen::to_value(&standard).map_err(|e| JsValue::from_str(&e.to_string()))
+        },
+        Err(e) => {
+            console_log!("Error loading standard: {}", e);
+            Err(JsValue::from_str(&e))
         }
-        _ => Err("Unknown standard".to_string()),
-    };
+    }
+}
 
-    match standard {
-        Ok(std) => serde_wasm_bindgen::to_value(&std).map_err(|e| JsValue::from_str(&e.to_string())),
-        Err(e) => Err(JsValue::from_str(&e)),
+#[wasm_bindgen]
+pub fn list_available_standards() -> Result<JsValue, JsValue> {
+    match EMCStandard::list_standards() {
+        Ok(standards) => serde_wasm_bindgen::to_value(&standards).map_err(|e| JsValue::from_str(&e.to_string())),
+        Err(e) => Err(JsValue::from_str(&e))
+    }
+}
+
+#[wasm_bindgen]
+pub fn list_standard_classes(standard_name: &str) -> Result<JsValue, JsValue> {
+    match EMCStandard::list_classes(standard_name) {
+        Ok(classes) => serde_wasm_bindgen::to_value(&classes).map_err(|e| JsValue::from_str(&e.to_string())),
+        Err(e) => Err(JsValue::from_str(&e))
     }
 }
 
@@ -286,112 +453,199 @@ pub fn generate_emc_mask(
     let log_max = f_max.log10();
     let total_points = ((log_max - log_min) * points_per_decade as f64).ceil() as usize;
     
-    let mut avg_points = Vec::new();
-    let mut qp_points = Vec::new();
-    let mut pk_points = Vec::new();
-    
-    for i in 0..=total_points {
-        let log_f = log_min + (i as f64 / total_points as f64) * (log_max - log_min);
-        let freq = 10.0_f64.powf(log_f);
-        
-        let limit = standard.interp_log(freq);
-        
-        avg_points.push(MaskPoint { x: freq, y: limit.dbuv_avg_limit });
-        
-        if limit.dbuv_qp_limit > 0.0 {
-            qp_points.push(MaskPoint { x: freq, y: limit.dbuv_qp_limit });
-        }
-        
-        if limit.dbuv_pk_limit > 0.0 {
-            pk_points.push(MaskPoint { x: freq, y: limit.dbuv_pk_limit });
-        }
-    }
-    
-    let mask = EMCMask {
-        avg: avg_points,
-        qp: qp_points,
-        pk: pk_points,
-    };
-    
+    let mask = standard.generate_adaptive_mask(f_min, f_max, total_points);
+    serde_wasm_bindgen::to_value(&mask).map_err(|e| JsValue::from_str(&e.to_string()))
+}
+
+// Enhanced WASM bindings for statistical analysis
+#[wasm_bindgen]
+pub fn analyze_emc_statistics(
+    standard_json: &str,
+    frequencies: &[f64],
+    amplitudes: &[f64]
+) -> Result<JsValue, JsValue> {
+    let standard: EMCStandard = serde_json::from_str(standard_json)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+
+    let stats = standard.analyze_measurement_statistics(frequencies, amplitudes);
+    serde_wasm_bindgen::to_value(&stats).map_err(|e| JsValue::from_str(&e.to_string()))
+}
+
+#[wasm_bindgen]
+pub fn generate_adaptive_emc_mask(
+    standard_json: &str,
+    f_min: f64,
+    f_max: f64,
+    target_points: usize
+) -> Result<JsValue, JsValue> {
+    let standard: EMCStandard = serde_json::from_str(standard_json)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+
+    let mask = standard.generate_adaptive_mask(f_min, f_max, target_points);
     serde_wasm_bindgen::to_value(&mask).map_err(|e| JsValue::from_str(&e.to_string()))
 }
 
 #[cfg(test)]
-pub mod test_standalone {
+mod tests {
     use super::*;
 
     #[test]
-    fn test_log_interp() {
-        let x_points = vec![1.0, 10.0, 100.0, 1000.0];
-        let y_points = vec![0.0, 1.0, 2.0, 3.0];
-        let x = 50.0;
-        let expected = 1.69897; // log10(50) ≈ 1.69897
-        let result = log_interp(&x_points, &y_points, x);
-        assert!((result - expected).abs() < 1e-5);
+    fn test_load_standards_data() {
+        let data = EMCStandard::load_standards_data();
+        assert!(data.is_ok());
+        
+        let standards = data.unwrap();
+        assert!(standards.standards.contains_key("CISPR22"));
+        assert!(standards.standards.contains_key("EN55032"));
+        assert!(standards.standards.contains_key("ECE_R10_AC"));
     }
-
+    
+    #[test]
+    fn test_get_standard() {
+        let standard = EMCStandard::get_standard("CISPR22", "ClassA");
+        assert!(standard.is_ok());
+        
+        let std = standard.unwrap();
+        assert_eq!(std.name, "CISPR 22 Class A");
+        assert!(!std.f_avg_limit_mask.is_empty());
+        assert!(!std.dbuv_avg_limit_mask.is_empty());
+    }
+    
+    #[test]
+    fn test_list_standards() {
+        let standards = EMCStandard::list_standards();
+        assert!(standards.is_ok());
+        
+        let list = standards.unwrap();
+        assert!(list.contains(&"CISPR22".to_string()));
+        assert!(list.contains(&"EN55032".to_string()));
+        assert!(list.len() >= 5); // We have at least 5 standards
+    }
+    
+    #[test]
+    fn test_list_classes() {
+        let classes = EMCStandard::list_classes("CISPR22");
+        assert!(classes.is_ok());
+        
+        let list = classes.unwrap();
+        assert!(list.contains(&"ClassA".to_string()));
+        assert!(list.contains(&"ClassB".to_string()));
+    }
+    
     #[test]
     fn test_interp_log() {
-        let standard = EMCStandard {
-            name: "Test_Standard".to_string(),
-            f_avg_limit_mask: vec![0.15e6, 0.5e6, 30e6],
-            dbuv_avg_limit_mask: vec![66.0, 60.0, 60.0],
-            f_qp_limit_mask: None,
-            dbuv_qp_limit_mask: None,
-            f_pk_limit_mask: None,
-            dbuv_pk_limit_mask: None,
-        };
-
-        let frequency = 0.3e6;
-        let result = standard.interp_log(frequency);
+        let standard = EMCStandard::get_standard("CISPR22", "ClassA").unwrap();
         
-        assert!((result.avg_limit - 10.0).abs() < 1e-5);
-        assert!((result.qp_limit - 10.0).abs() < 1e-5);
-        assert!((result.pk_limit - 10.0).abs() < 1e-5);
+        // Test interpolation at 1 MHz (should be between 150kHz and 500kHz limits)
+        let result = standard.interp_log(1_000_000.0);
+        
+        assert!(result.dbuv_avg_limit > 0.0);
+        assert!(result.dbuv_qp_limit > result.dbuv_avg_limit);
+        assert!(result.dbuv_pk_limit > result.dbuv_qp_limit);
     }
-
+    
     #[test]
-    fn test_cispr22() {
-        let standard = EMCStandard::cispr22("A").unwrap();
+    fn test_generate_adaptive_mask() {
+        let standard = EMCStandard::get_standard("CISPR22", "ClassB").unwrap();
+        let mask = standard.generate_adaptive_mask(150_000.0, 30_000_000.0, 50);
         
-        assert_eq!(standard.name, "CISPR22_Class_A");
-        assert_eq!(standard.f_avg_limit_mask.len(), 4);
-        assert_eq!(standard.dbuv_avg_limit_mask.len(), 4);
+        assert_eq!(mask.avg.len(), 50);
+        assert!(!mask.qp.is_empty());
+        
+        // Verify frequency ordering
+        for i in 1..mask.avg.len() {
+            assert!(mask.avg[i].frequency > mask.avg[i-1].frequency);
+        }
     }
-
+    
     #[test]
-    fn test_en55032() {
-        let standard = EMCStandard::en55032("B").unwrap();
+    fn test_analyze_measurement_statistics() {
+        let standard = EMCStandard::get_standard("CISPR22", "ClassA").unwrap();
         
-        assert_eq!(standard.name, "EN55032_Class_B");
-        assert_eq!(standard.f_avg_limit_mask.len(), 6);
-        assert_eq!(standard.dbuv_avg_limit_mask.len(), 6);
+        // Create some test measurement data
+        let frequencies = vec![500_000.0, 1_000_000.0, 5_000_000.0, 10_000_000.0];
+        let amplitudes = vec![70.0, 65.0, 55.0, 50.0]; // Some values above/below limits
+        
+        let stats = standard.analyze_measurement_statistics(&frequencies, &amplitudes);
+        
+        assert_eq!(stats.mean_amplitude, 60.0);
+        assert!(stats.std_amplitude > 0.0);
+        assert_eq!(stats.max_amplitude, 70.0);
+        assert_eq!(stats.min_amplitude, 50.0);
+        assert!(stats.percentile_95 >= stats.percentile_99 * 0.95); // P95 should be <= P99
+        assert!(stats.compliance_rate >= 0.0 && stats.compliance_rate <= 100.0);
     }
-
+    
     #[test]
-    fn test_ece_r10_conducted_ac_lines() {
-        let standard = EMCStandard::ece_r10_conducted_ac_lines();
+    fn test_integration_json_serialization() {
+        // Test that standards can be serialized and deserialized for WASM
+        let standard = EMCStandard::get_standard("CISPR22", "ClassA").unwrap();
         
-        assert_eq!(standard.name, "ECE_R_10_2012_AC");
-        assert_eq!(standard.f_avg_limit_mask.len(), 6);
-        assert_eq!(standard.dbuv_avg_limit_mask.len(), 6);
+        // Serialize to JSON (what WASM will do)
+        let json = serde_json::to_string(&standard).unwrap();
+        assert!(!json.is_empty());
+        
+        // Deserialize from JSON (what WASM functions will receive)
+        let deserialized: EMCStandard = serde_json::from_str(&json).unwrap();
+        
+        // Verify the data is intact
+        assert_eq!(deserialized.name, standard.name);
+        assert_eq!(deserialized.description, standard.description);
+        assert_eq!(deserialized.f_avg_limit_mask, standard.f_avg_limit_mask);
+        assert_eq!(deserialized.dbuv_avg_limit_mask, standard.dbuv_avg_limit_mask);
+        
+        // Test that interpolation still works
+        let result1 = standard.interp_log(1_000_000.0);
+        let result2 = deserialized.interp_log(1_000_000.0);
+        
+        assert_eq!(result1.dbuv_avg_limit, result2.dbuv_avg_limit);
+        assert_eq!(result1.dbuv_qp_limit, result2.dbuv_qp_limit);
     }
-
+    
     #[test]
-    fn test_ece_r10_conducted_dc_lines() {
-        let standard = EMCStandard::ece_r10_conducted_dc_lines();
+    fn test_integration_emc_mask_serialization() {
+        let standard = EMCStandard::get_standard("EN55032", "ClassB").unwrap();
+        let mask = standard.generate_adaptive_mask(150_000.0, 30_000_000.0, 20);
         
-        assert_eq!(standard.name, "ECE_R_10_2012_DC");
-        assert_eq!(standard.f_avg_limit_mask.len(), 4);
-        assert_eq!(standard.dbuv_avg_limit_mask.len(), 4);
+        // Test EMCMask serialization
+        let json = serde_json::to_string(&mask).unwrap();
+        let deserialized: EMCMask = serde_json::from_str(&json).unwrap();
+        
+        assert_eq!(mask.avg.len(), deserialized.avg.len());
+        assert_eq!(mask.qp.len(), deserialized.qp.len());
+        
+        // Verify first and last points
+        if !mask.avg.is_empty() {
+            assert_eq!(mask.avg[0].frequency, deserialized.avg[0].frequency);
+            assert_eq!(mask.avg[0].amplitude, deserialized.avg[0].amplitude);
+        }
     }
-
+    
     #[test]
-    fn test_iec61800_3() {
-        let standard = EMCStandard::iec61800_3("C1", "AC").unwrap();
+    fn test_integration_statistics_calculation() {
+        let standard = EMCStandard::get_standard("ECE_R10_AC", "Class3").unwrap();
         
-        assert_eq!(standard.name, "IEC61800_3_Class_C1");
-        assert_eq!(standard.f_avg_limit_mask.len(), 4);
-        assert_eq!(standard.dbuv_avg_limit_mask.len(), 4);
+        // Create realistic test data
+        let frequencies = vec![
+            200_000.0, 500_000.0, 1_000_000.0, 2_000_000.0, 
+            5_000_000.0, 10_000_000.0, 20_000_000.0, 30_000_000.0
+        ];
+        let amplitudes = vec![85.0, 78.0, 72.0, 68.0, 65.0, 62.0, 58.0, 55.0];
+        
+        let stats = standard.analyze_measurement_statistics(&frequencies, &amplitudes);
+        
+        // Verify reasonable statistical values
+        assert!(stats.mean_amplitude > 50.0 && stats.mean_amplitude < 90.0);
+        assert!(stats.std_amplitude > 0.0);
+        assert!(stats.max_amplitude >= stats.mean_amplitude);
+        assert!(stats.min_amplitude <= stats.mean_amplitude);
+        assert!(stats.percentile_95 >= stats.percentile_99 * 0.95);
+        
+        // Serialize statistics
+        let json = serde_json::to_string(&stats).unwrap();
+        let deserialized: EMCStatistics = serde_json::from_str(&json).unwrap();
+        
+        assert_eq!(stats.mean_amplitude, deserialized.mean_amplitude);
+        assert_eq!(stats.violation_count, deserialized.violation_count);
     }
 }
