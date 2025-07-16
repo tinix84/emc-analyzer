@@ -23,12 +23,30 @@
         </div>
       </div>
 
+      <!-- WASM Success Status -->
+      <div v-if="!wasm.isLoading && !wasm.error && wasm.wasmModule" class="text-center mb-8">
+        <div class="inline-flex items-center px-6 py-3 bg-green-100 rounded-lg text-green-700">
+          ✅ WASM module loaded successfully!
+        </div>
+      </div>
+
       <!-- Error State -->
       <div v-if="wasm.error" class="text-center mb-8">
         <div class="inline-flex items-center px-6 py-3 bg-red-100 rounded-lg text-red-700">
           ❌ {{ wasm.error }}
         </div>
+        <div class="mt-4 text-center">
+          <button 
+            @click="wasm.initWasm()" 
+            class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+          >
+            🔄 Retry WASM Loading
+          </button>
+        </div>
       </div>
+
+      <!-- Debug Panel (remove this in production) -->
+      <WasmDebugPanel />
 
       <!-- Main Content -->
       <div v-if="!wasm.isLoading && !wasm.error">
