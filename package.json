@@ -10,7 +10,9 @@
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare || echo 'Prepare failed, continuing...'",
     "build:wasm": "cd wasm && wasm-pack build --target web --out-dir ../public/wasm",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo 'No frontend tests configured yet' && exit 0",
+    "test:wasm": "cd wasm && cargo test",
+    "test:build": "npm run build:wasm && npm run build"
   },
   "keywords": [
     "emc",
