@@ -27,7 +27,7 @@
   "license": "MIT",
   "devDependencies": {
     "@nuxtjs/tailwindcss": "^6.8.4",
-    "nuxt": "^3.8.0"
+    "nuxt": "3.7.4"
   },
   "dependencies": {
     "@pinia/nuxt": "^0.5.1",
@@ -44,10 +44,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/tinix84/emc-analyzer.git"
+    "url": "https://github.com/YOUR_USERNAME/emc-analyzer.git"
   },
   "bugs": {
-    "url": "https://github.com/tinix84/emc-analyzer/issues"
+    "url": "https://github.com/YOUR_USERNAME/emc-analyzer/issues"
   },
-  "homepage": "https://github.com/tinix84/emc-analyzer#readme"
+  "homepage": "https://github.com/YOUR_USERNAME/emc-analyzer#readme"
 }
