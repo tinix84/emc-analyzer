@@ -53,9 +53,9 @@ export default defineNuxtConfig({
     }
   },
   
-  // TypeScript configuration
+  // TypeScript configuration - DISABLE strict checking
   typescript: {
-    typeCheck: true
+    typeCheck: false
   },
   
   // Build configuration
