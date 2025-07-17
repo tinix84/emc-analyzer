@@ -60,7 +60,6 @@
       </h2>
       <SemiLogChart 
         :measurement-data="measurementData"
-        :standard-mask="standardMask"
         :standard-masks="standardMasks"
       />
     </div>
@@ -108,10 +107,6 @@ const selectedStandard = ref('')
 const measurementData = ref<Array<{frequency: number, amplitude: number}>>([])
 const standardMasks = ref<{ [key: string]: Array<{frequency: number, amplitude: number}> }>({})
 
-const standardMask = computed(() => {
-  return emcStore.getStandardMask(selectedStandard.value)
-})
-
 // Load multiple masks when standard changes
 watch(selectedStandard, async (newStandard) => {
   if (newStandard) {
@@ -141,8 +136,7 @@ const handleFilesUploaded = (files: File[]) => {
 const handleStandardChanged = (standard: string) => {
   console.log('🎯 Standard changed from', selectedStandard.value, 'to', standard)
   selectedStandard.value = standard
-  console.log('📊 New standard mask data:', emcStore.getStandardMask(standard))
-  console.log('📊 Standard mask computed:', standardMask.value)
+  console.log('📊 Loading multiple masks for standard:', standard)
 }
 
 const clearAllData = () => {

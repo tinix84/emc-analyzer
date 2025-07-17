@@ -48,10 +48,6 @@
         <div class="w-4 h-4 bg-blue-500 rounded"></div>
         <span>Measurement Data</span>
       </div>
-      <div v-if="showMask && standardMask.length > 0" class="flex items-center space-x-2">
-        <div class="w-4 h-4 bg-red-500 rounded"></div>
-        <span>EMC Limit (Legacy)</span>
-      </div>
       <!-- Multiple Masks Legend -->
       <div v-if="showMask && standardMasks && Object.keys(standardMasks).length > 0" class="flex gap-4">
         <div v-if="standardMasks.avg && standardMasks.avg.length > 0" class="flex items-center space-x-2">
@@ -125,7 +121,6 @@ Chart.register(
 
 const props = defineProps<{
   measurementData: Array<{frequency: number, amplitude: number}>
-  standardMask: Array<{frequency: number, amplitude: number}>
   standardMasks?: { [key: string]: Array<{frequency: number, amplitude: number}> }
 }>()
 
@@ -186,23 +181,6 @@ const createChart = () => {
       borderWidth: 2,
       pointRadius: 1,
       pointHoverRadius: 4,
-      tension: 0.1,
-      fill: false
-    })
-  }
-
-  // Standard mask (legacy)
-  if (showMask.value && props.standardMask.length > 0) {
-    datasets.push({
-      label: 'EMC Limit (Legacy)',
-      data: props.standardMask.map(point => ({
-        x: Number(point.frequency),
-        y: Number(point.amplitude)
-      })),
-      borderColor: 'rgb(239, 68, 68)', // red-500
-      backgroundColor: 'rgba(239, 68, 68, 0.1)',
-      borderWidth: 2,
-      pointRadius: 0,
       tension: 0.1,
       fill: false
     })
@@ -321,7 +299,6 @@ const updateChart = () => {
 
   console.log('📈 Updating chart with:')
   console.log('  - Measurement data points:', props.measurementData.length)
-  console.log('  - Standard mask points:', props.standardMask.length)
   console.log('  - Standard masks:', props.standardMasks ? Object.keys(props.standardMasks) : 'none')
   console.log('  - Show mask:', showMask.value)
 
@@ -340,23 +317,6 @@ const updateChart = () => {
       borderWidth: 2,
       pointRadius: 1,
       pointHoverRadius: 4,
-      tension: 0.1,
-      fill: false
-    })
-  }
-
-  // Standard mask (legacy)
-  if (showMask.value && props.standardMask.length > 0) {
-    datasets.push({
-      label: 'EMC Limit (Legacy)',
-      data: props.standardMask.map(point => ({
-        x: Number(point.frequency),
-        y: Number(point.amplitude)
-      })),
-      borderColor: 'rgb(239, 68, 68)',
-      backgroundColor: 'rgba(239, 68, 68, 0.1)',
-      borderWidth: 2,
-      pointRadius: 0,
       tension: 0.1,
       fill: false
     })
@@ -450,7 +410,7 @@ const formatFrequency = (freq: number): string => {
 }
 
 // Watchers with better error handling
-watch([() => props.measurementData, () => props.standardMask, () => props.standardMasks], () => {
+watch([() => props.measurementData, () => props.standardMasks], () => {
   try {
     updateChart()
   } catch (error) {
