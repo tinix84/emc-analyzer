@@ -152,9 +152,10 @@ const createChart = () => {
   // Clear any existing chart
   if (chart.value) {
     chart.value.destroy()
+    chart.value = undefined
   }
 
-  const datasets = []
+  const datasets: any[] = []
 
   // Measurement data
   if (props.measurementData.length > 0) {
@@ -194,10 +195,16 @@ const createChart = () => {
   try {
     chart.value = new Chart(ctx, {
       type: 'line',
-      data: { datasets },
+      data: { 
+        datasets: datasets
+      },
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        parsing: {
+          xAxisKey: 'x',
+          yAxisKey: 'y'
+        },
         interaction: {
           intersect: false,
           mode: 'index'
@@ -265,6 +272,11 @@ const createChart = () => {
 const updateChart = () => {
   if (!chart.value) return
 
+  console.log('📈 Updating chart with:')
+  console.log('  - Measurement data points:', props.measurementData.length)
+  console.log('  - Standard mask points:', props.standardMask.length)
+  console.log('  - Show mask:', showMask.value)
+
   const datasets: any[] = []
 
   // Measurement data
@@ -302,16 +314,25 @@ const updateChart = () => {
     })
   }
 
-  chart.value.data.datasets = datasets
-  
-  if (chart.value.options.scales?.x?.grid) {
-    chart.value.options.scales.x.grid.display = showGrid.value
+  try {
+    // Safely update chart data
+    chart.value.data.datasets = datasets
+    
+    // Update grid settings
+    if (chart.value.options.scales?.x?.grid) {
+      chart.value.options.scales.x.grid.display = showGrid.value
+    }
+    if (chart.value.options.scales?.y?.grid) {
+      chart.value.options.scales.y.grid.display = showGrid.value
+    }
+    
+    // Use 'resize' mode to prevent scale issues
+    chart.value.update('resize')
+  } catch (error) {
+    console.error('⚠️ Chart update failed, recreating chart:', error)
+    // If update fails, recreate the chart
+    createChart()
   }
-  if (chart.value.options.scales?.y?.grid) {
-    chart.value.options.scales.y.grid.display = showGrid.value
-  }
-  
-  chart.value.update()
 }
 
 const resetZoom = () => {
@@ -341,12 +362,29 @@ const formatFrequency = (freq: number): string => {
   }
 }
 
-// Watchers
-watch([() => props.measurementData, () => props.standardMask], updateChart, { deep: true })
-watch([showMask, showGrid], updateChart)
+// Watchers with better error handling
+watch([() => props.measurementData, () => props.standardMask], () => {
+  try {
+    updateChart()
+  } catch (error) {
+    console.error('⚠️ Error in chart watcher:', error)
+  }
+}, { deep: true, immediate: false })
+
+watch([showMask, showGrid], () => {
+  try {
+    updateChart()
+  } catch (error) {
+    console.error('⚠️ Error in options watcher:', error)
+  }
+})
 
 onMounted(() => {
-  createChart()
+  try {
+    createChart()
+  } catch (error) {
+    console.error('⚠️ Error creating chart:', error)
+  }
 })
 
 onUnmounted(() => {

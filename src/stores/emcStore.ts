@@ -138,9 +138,14 @@ export const useEMCStore = defineStore('emc', () => {
   loadFromStorage()
 
   const getStandardMask = (standardId: string) => {
+    console.log('🏪 Store: Getting mask for standard:', standardId)
     const standard = standards.value.find(s => s.id === standardId)
-    if (!standard) return []
+    if (!standard) {
+      console.log('🏪 Store: Standard not found!')
+      return []
+    }
 
+    console.log('🏪 Store: Standard found:', standard.name, 'with', standard.frequencyRanges.length, 'ranges')
     const mask: MeasurementPoint[] = []
     standard.frequencyRanges.forEach(range => {
       // Generate points for smooth mask visualization
@@ -156,6 +161,7 @@ export const useEMCStore = defineStore('emc', () => {
       }
     })
 
+    console.log('🏪 Store: Generated mask with', mask.length, 'points')
     return mask
   }
 

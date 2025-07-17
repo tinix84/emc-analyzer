@@ -121,8 +121,10 @@ const handleFilesUploaded = (files: File[]) => {
 }
 
 const handleStandardChanged = (standard: string) => {
+  console.log('🎯 Standard changed from', selectedStandard.value, 'to', standard)
   selectedStandard.value = standard
-  console.log('Standard selected:', standard)
+  console.log('📊 New standard mask data:', emcStore.getStandardMask(standard))
+  console.log('📊 Standard mask computed:', standardMask.value)
 }
 
 const clearAllData = () => {
