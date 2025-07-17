@@ -48,7 +48,8 @@
         📋 Select EMC Standard
       </h2>
       <StandardSelector 
-        :selected-standard="selectedStandard"
+        :selected-standards="selectedStandards"
+          :selected-standard="selectedStandard"
         @standard-changed="handleStandardChanged" 
       />
     </div>
@@ -132,13 +133,13 @@ const clearAllData = () => {
     measurementData.value = []
     selectedStandard.value = ''
     emcStore.clearData()
-    console.log('🗑️ All data cleared by user')
+    console.log('🗑️ All data cleared')
   }
 }
 
 const processFile = async (file: File) => {
   try {
-    console.log(`📄 Processing file: ${file.name} (${file.size} bytes)`)
+    console.log(`📂 Processing file: ${file.name} (${file.size} bytes)`)
     const text = await file.text()
     console.log('📝 File content preview:', text.substring(0, 200) + '...')
     

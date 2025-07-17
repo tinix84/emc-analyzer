@@ -50,40 +50,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Selected Standard Details -->
-    <div v-if="selectedStandardDetails" class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-      <h3 class="font-semibold text-blue-800 mb-2">
-        Selected: {{ selectedStandardDetails.name }}
-      </h3>
-      <p class="text-sm text-blue-700 mb-3">
-        {{ selectedStandardDetails.description }}
-      </p>
-      
-      <!-- Complete Frequency Ranges Table -->
-      <div class="overflow-x-auto">
-        <table class="min-w-full text-sm">
-          <thead>
-            <tr class="bg-blue-100">
-              <th class="px-3 py-2 text-left text-blue-800">Start Frequency</th>
-              <th class="px-3 py-2 text-left text-blue-800">End Frequency</th>
-              <th class="px-3 py-2 text-left text-blue-800">Limit (dBμV)</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr 
-              v-for="(range, index) in selectedStandardDetails.frequencyRanges"
-              :key="index"
-              class="border-b border-blue-200"
-            >
-              <td class="px-3 py-2 text-blue-700">{{ formatFrequency(range.startFreq) }}</td>
-              <td class="px-3 py-2 text-blue-700">{{ formatFrequency(range.endFreq) }}</td>
-              <td class="px-3 py-2 text-blue-700 font-medium">{{ range.limit }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
   </div>
 </template>
 

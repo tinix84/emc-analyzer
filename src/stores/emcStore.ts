@@ -60,57 +60,59 @@ export const useEMCStore = defineStore('emc', () => {
     }
   }
   
-  // Available EMC Standards
-  const standards = ref<EMCStandard[]>([
-    {
-      id: 'EN55032_CLASS_A',
-      name: 'EN 55032 Class A',
-      description: 'Information technology equipment - Radio disturbance characteristics - Limits and methods of measurement - Class A',
-      frequencyRanges: [
-        { startFreq: 0.15, endFreq: 0.5, limit: 79 },
-        { startFreq: 0.5, endFreq: 5, limit: 73 },
-        { startFreq: 5, endFreq: 30, limit: 73 },
-        { startFreq: 30, endFreq: 230, limit: 40 },
-        { startFreq: 230, endFreq: 1000, limit: 47 }
-      ]
-    },
-    {
-      id: 'EN55032_CLASS_B',
-      name: 'EN 55032 Class B',
-      description: 'Information technology equipment - Radio disturbance characteristics - Limits and methods of measurement - Class B',
-      frequencyRanges: [
-        { startFreq: 0.15, endFreq: 0.5, limit: 66 },
-        { startFreq: 0.5, endFreq: 5, limit: 56 },
-        { startFreq: 5, endFreq: 30, limit: 56 },
-        { startFreq: 30, endFreq: 230, limit: 30 },
-        { startFreq: 230, endFreq: 1000, limit: 37 }
-      ]
-    },
-    {
-      id: 'CISPR32_CLASS_A',
-      name: 'CISPR 32 Class A',
-      description: 'Electromagnetic compatibility of multimedia equipment - Emission requirements - Class A',
-      frequencyRanges: [
-        { startFreq: 0.15, endFreq: 0.5, limit: 79 },
-        { startFreq: 0.5, endFreq: 5, limit: 73 },
-        { startFreq: 5, endFreq: 30, limit: 73 },
-        { startFreq: 30, endFreq: 230, limit: 40 },
-        { startFreq: 230, endFreq: 1000, limit: 47 }
-      ]
-    },
-    {
-      id: 'CISPR32_CLASS_B',
-      name: 'CISPR 32 Class B',
-      description: 'Electromagnetic compatibility of multimedia equipment - Emission requirements - Class B',
-      frequencyRanges: [
-        { startFreq: 0.15, endFreq: 0.5, limit: 66 },
-        { startFreq: 0.5, endFreq: 5, limit: 56 },
-        { startFreq: 5, endFreq: 30, limit: 56 },
-        { startFreq: 30, endFreq: 230, limit: 30 },
-        { startFreq: 230, endFreq: 1000, limit: 37 }
+  // Available EMC Standards - loaded from JSON
+  const standards = ref<EMCStandard[]>([])
+  
+  // Load standards from JSON file
+  const loadStandards = async () => {
+    try {
+      const response = await fetch('/emc-standards.json')
+      const data = await response.json()
+      
+      console.log('📋 Loading standards from JSON:', Object.keys(data.standards))
+      
+      const loadedStandards: EMCStandard[] = []
+      
+      for (const [key, standard] of Object.entries(data.standards)) {
+        const stdData = standard as any
+        
+        // Convert the avg limits to frequency ranges for backward compatibility
+        const frequencyRanges = stdData.limits.avg.map((point: [number, number]) => ({
+          startFreq: point[0],
+          endFreq: point[0], // For now, we'll use the same frequency as start and end
+          limit: point[1]
+        }))
+        
+        loadedStandards.push({
+          id: key,
+          name: stdData.name,
+          description: stdData.description,
+          frequencyRanges
+        })
+      }
+      
+      standards.value = loadedStandards
+      console.log('✅ Loaded', loadedStandards.length, 'standards from JSON')
+      
+    } catch (error) {
+      console.error('❌ Failed to load standards from JSON:', error)
+      // Fallback to hardcoded standards if JSON loading fails
+      standards.value = [
+        {
+          id: 'EN55032_CLASS_A',
+          name: 'EN 55032 Class A',
+          description: 'Information technology equipment - Radio disturbance characteristics - Limits and methods of measurement - Class A',
+          frequencyRanges: [
+            { startFreq: 0.15, endFreq: 0.5, limit: 79 },
+            { startFreq: 0.5, endFreq: 5, limit: 73 },
+            { startFreq: 5, endFreq: 30, limit: 73 },
+            { startFreq: 30, endFreq: 230, limit: 40 },
+            { startFreq: 230, endFreq: 1000, limit: 47 }
+          ]
+        }
       ]
     }
-  ])
+  }
 
   // Actions
   const setMeasurementData = (data: MeasurementPoint[]) => {
@@ -134,8 +136,9 @@ export const useEMCStore = defineStore('emc', () => {
     console.log('🗑️ All data cleared')
   }
 
-  // Initialize from storage
+  // Initialize from storage and load standards
   loadFromStorage()
+  loadStandards()
 
   const getStandardMask = (standardId: string) => {
     console.log('🏪 Store: Getting mask for standard:', standardId)
@@ -199,6 +202,7 @@ export const useEMCStore = defineStore('emc', () => {
     setCurrentStandard,
     getStandardMask,
     clearData,
+    loadStandards,
     
     // Getters
     complianceStatus
