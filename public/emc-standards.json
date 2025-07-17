@@ -1,0 +1,88 @@
+{
+  "standards": {
+    "ECE_R10_Conducted_AC_lines": {
+      "name": "ECE R-10 2012 AC line",
+      "description": "Table 9: Maximum allowed radiofrequency conducted disturbances on AC power lines",
+      "limits": {
+        "avg": [
+          [0.15, 56], [0.5, 46], [0.5001, 46], [5, 46], [5.001, 50], [30, 50]
+        ],
+        "qp": [
+          [0.15, 66], [0.5, 56], [0.5001, 56], [5, 56], [5.001, 60], [30, 60]
+        ]
+      }
+    },
+    "ECE_R10_Conducted_DC_lines": {
+      "name": "ECE R-10 2012 DC line",
+      "description": "Table 10: Maximum allowed radiofrequency conducted disturbances on DC power lines",
+      "limits": {
+        "avg": [
+          [0.15, 66], [0.5, 66], [0.5001, 60], [30, 60]
+        ],
+        "qp": [
+          [0.15, 79], [0.5, 79], [0.5001, 66], [30, 66]
+        ]
+      }
+    },
+    "EN55032_CLASS_A": {
+      "name": "EN 55032 Class A",
+      "description": "Information technology equipment - Radio disturbance characteristics - Limits and methods of measurement - Class A",
+      "limits": {
+        "avg": [
+          [0.15, 66], [0.5, 56], [5, 56], [30, 30], [230, 37], [1000, 37]
+        ],
+        "qp": [
+          [0.15, 79], [0.5, 73], [5, 73], [30, 40], [230, 47], [1000, 47]
+        ],
+        "pk": [
+          [0.15, 99], [0.5, 93], [5, 93], [30, 60], [230, 67], [1000, 67]
+        ]
+      }
+    },
+    "EN55032_CLASS_B": {
+      "name": "EN 55032 Class B",
+      "description": "Information technology equipment - Radio disturbance characteristics - Limits and methods of measurement - Class B",
+      "limits": {
+        "avg": [
+          [0.15, 56], [0.5, 46], [5, 46], [30, 20], [230, 27], [1000, 27]
+        ],
+        "qp": [
+          [0.15, 66], [0.5, 56], [5, 56], [30, 30], [230, 37], [1000, 37]
+        ],
+        "pk": [
+          [0.15, 86], [0.5, 76], [5, 76], [30, 50], [230, 57], [1000, 57]
+        ]
+      }
+    },
+    "CISPR32_CLASS_A": {
+      "name": "CISPR 32 Class A",
+      "description": "Electromagnetic compatibility of multimedia equipment - Emission requirements - Class A",
+      "limits": {
+        "avg": [
+          [0.15, 66], [0.5, 66], [0.5001, 60], [30, 60]
+        ],
+        "qp": [
+          [0.15, 79], [0.5, 79], [0.5001, 73], [30, 73]
+        ],
+        "pk": [
+          [0.15, null], [0.5, null], [5, null], [30, null], [230, null], [1000, null]
+        ]
+      }
+    },
+    "CISPR32_CLASS_B": {
+      "name": "CISPR 32 Class B", 
+      "description": "Electromagnetic compatibility of multimedia equipment - Emission requirements - Class B",
+      "limits": {
+        "avg": [
+          [0.15, 56], [0.5, 46], [0.5001, 46], [5, 46], [5.001, 50], [30, 50]
+        ],
+        "qp": [
+          [0.15, 66], [0.5, 56], [0.5001, 56], [5, 56], [5.001, 60], [30, 60]
+        ],
+        "pk": [
+          [0.15, null], [0.5, null], [5, null], [30, null], [230, null], [1000, null]
+        ]
+      }
+    }
+  }
+}

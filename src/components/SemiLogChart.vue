@@ -48,9 +48,20 @@
         <div class="w-4 h-4 bg-blue-500 rounded"></div>
         <span>Measurement Data</span>
       </div>
-      <div v-if="showMask && standardMask.length > 0" class="flex items-center space-x-2">
-        <div class="w-4 h-4 bg-red-500 rounded"></div>
-        <span>EMC Limit</span>
+      <!-- Multiple Masks Legend -->
+      <div v-if="showMask && standardMasks && Object.keys(standardMasks).length > 0" class="flex gap-4">
+        <div v-if="standardMasks.avg && standardMasks.avg.length > 0" class="flex items-center space-x-2">
+          <div class="w-4 h-4 bg-green-500 rounded"></div>
+          <span>AVG Limit</span>
+        </div>
+        <div v-if="standardMasks.qp && standardMasks.qp.length > 0" class="flex items-center space-x-2">
+          <div class="w-4 h-4 bg-orange-500 rounded"></div>
+          <span>QP Limit</span>
+        </div>
+        <div v-if="standardMasks.pk && standardMasks.pk.length > 0" class="flex items-center space-x-2">
+          <div class="w-4 h-4 bg-purple-500 rounded"></div>
+          <span>PK Limit</span>
+        </div>
       </div>
     </div>
 
@@ -110,7 +121,7 @@ Chart.register(
 
 const props = defineProps<{
   measurementData: Array<{frequency: number, amplitude: number}>
-  standardMask: Array<{frequency: number, amplitude: number}>
+  standardMasks?: { [key: string]: Array<{frequency: number, amplitude: number}> }
 }>()
 
 const chartCanvas = ref<HTMLCanvasElement>()
@@ -162,8 +173,8 @@ const createChart = () => {
     datasets.push({
       label: 'Measurement Data',
       data: props.measurementData.map(point => ({
-        x: point.frequency,
-        y: point.amplitude
+        x: Number(point.frequency),
+        y: Number(point.amplitude)
       })),
       borderColor: 'rgb(59, 130, 246)', // blue-500
       backgroundColor: 'rgba(59, 130, 246, 0.1)',
@@ -175,20 +186,34 @@ const createChart = () => {
     })
   }
 
-  // Standard mask
-  if (showMask.value && props.standardMask.length > 0) {
-    datasets.push({
-      label: 'EMC Limit',
-      data: props.standardMask.map(point => ({
-        x: point.frequency,
-        y: point.amplitude
-      })),
-      borderColor: 'rgb(239, 68, 68)', // red-500
-      backgroundColor: 'rgba(239, 68, 68, 0.1)',
-      borderWidth: 2,
-      pointRadius: 0,
-      tension: 0.1,
-      fill: false
+  // Multiple standard masks (AVG, QP, PK)
+  if (showMask.value && props.standardMasks && Object.keys(props.standardMasks).length > 0) {
+    const maskColors = {
+      avg: { border: 'rgb(34, 197, 94)', background: 'rgba(34, 197, 94, 0.1)' }, // green-500
+      qp: { border: 'rgb(249, 115, 22)', background: 'rgba(249, 115, 22, 0.1)' }, // orange-500
+      pk: { border: 'rgb(147, 51, 234)', background: 'rgba(147, 51, 234, 0.1)' }  // purple-500
+    }
+
+    Object.entries(props.standardMasks).forEach(([maskType, maskData]) => {
+      if (maskData && maskData.length > 0) {
+        const colors = maskColors[maskType as keyof typeof maskColors] || 
+                      { border: 'rgb(156, 163, 175)', background: 'rgba(156, 163, 175, 0.1)' }
+        
+        datasets.push({
+          label: `${maskType.toUpperCase()} Limit`,
+          data: maskData.map(point => ({
+            x: Number(point.frequency),
+            y: Number(point.amplitude)
+          })),
+          borderColor: colors.border,
+          backgroundColor: colors.background,
+          borderWidth: 2,
+          pointRadius: 0,
+          tension: 0.1,
+          fill: false,
+          borderDash: maskType === 'pk' ? [5, 5] : maskType === 'qp' ? [10, 5] : []
+        })
+      }
     })
   }
 
@@ -274,7 +299,7 @@ const updateChart = () => {
 
   console.log('📈 Updating chart with:')
   console.log('  - Measurement data points:', props.measurementData.length)
-  console.log('  - Standard mask points:', props.standardMask.length)
+  console.log('  - Standard masks:', props.standardMasks ? Object.keys(props.standardMasks) : 'none')
   console.log('  - Show mask:', showMask.value)
 
   const datasets: any[] = []
@@ -284,8 +309,8 @@ const updateChart = () => {
     datasets.push({
       label: 'Measurement Data',
       data: props.measurementData.map(point => ({
-        x: point.frequency,
-        y: point.amplitude
+        x: Number(point.frequency),
+        y: Number(point.amplitude)
       })),
       borderColor: 'rgb(59, 130, 246)',
       backgroundColor: 'rgba(59, 130, 246, 0.1)',
@@ -297,20 +322,34 @@ const updateChart = () => {
     })
   }
 
-  // Standard mask
-  if (showMask.value && props.standardMask.length > 0) {
-    datasets.push({
-      label: 'EMC Limit',
-      data: props.standardMask.map(point => ({
-        x: point.frequency,
-        y: point.amplitude
-      })),
-      borderColor: 'rgb(239, 68, 68)',
-      backgroundColor: 'rgba(239, 68, 68, 0.1)',
-      borderWidth: 2,
-      pointRadius: 0,
-      tension: 0.1,
-      fill: false
+  // Multiple standard masks (AVG, QP, PK)
+  if (showMask.value && props.standardMasks && Object.keys(props.standardMasks).length > 0) {
+    const maskColors = {
+      avg: { border: 'rgb(34, 197, 94)', background: 'rgba(34, 197, 94, 0.1)' }, // green-500
+      qp: { border: 'rgb(249, 115, 22)', background: 'rgba(249, 115, 22, 0.1)' }, // orange-500
+      pk: { border: 'rgb(147, 51, 234)', background: 'rgba(147, 51, 234, 0.1)' }  // purple-500
+    }
+
+    Object.entries(props.standardMasks).forEach(([maskType, maskData]) => {
+      if (maskData && maskData.length > 0) {
+        const colors = maskColors[maskType as keyof typeof maskColors] || 
+                      { border: 'rgb(156, 163, 175)', background: 'rgba(156, 163, 175, 0.1)' }
+        
+        datasets.push({
+          label: `${maskType.toUpperCase()} Limit`,
+          data: maskData.map(point => ({
+            x: Number(point.frequency),
+            y: Number(point.amplitude)
+          })),
+          borderColor: colors.border,
+          backgroundColor: colors.background,
+          borderWidth: 2,
+          pointRadius: 0,
+          tension: 0.1,
+          fill: false,
+          borderDash: maskType === 'pk' ? [5, 5] : maskType === 'qp' ? [10, 5] : []
+        })
+      }
     })
   }
 
@@ -326,12 +365,20 @@ const updateChart = () => {
       chart.value.options.scales.y.grid.display = showGrid.value
     }
     
-    // Use 'resize' mode to prevent scale issues
-    chart.value.update('resize')
+    // Use 'none' mode to prevent animations and reduce recursion risk
+    chart.value.update('none')
   } catch (error) {
     console.error('⚠️ Chart update failed, recreating chart:', error)
-    // If update fails, recreate the chart
-    createChart()
+    // If update fails, recreate the chart safely
+    try {
+      if (chart.value) {
+        chart.value.destroy()
+        chart.value = undefined
+      }
+      setTimeout(() => createChart(), 100) // Delay recreation to prevent recursion
+    } catch (recreateError) {
+      console.error('❌ Chart recreation also failed:', recreateError)
+    }
   }
 }
 
@@ -363,7 +410,7 @@ const formatFrequency = (freq: number): string => {
 }
 
 // Watchers with better error handling
-watch([() => props.measurementData, () => props.standardMask], () => {
+watch([() => props.measurementData, () => props.standardMasks], () => {
   try {
     updateChart()
   } catch (error) {
