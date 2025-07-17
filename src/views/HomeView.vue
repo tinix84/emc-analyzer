@@ -62,6 +62,7 @@
       <SemiLogChart 
         :measurement-data="measurementData"
         :standard-mask="standardMask"
+        :standard-masks="standardMasks"
       />
     </div>
 
@@ -95,7 +96,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useEMCStore } from '@/stores/emcStore'
 import FileUpload from '@/components/FileUpload.vue'
 import StandardSelector from '@/components/StandardSelector.vue'
@@ -106,9 +107,26 @@ const emcStore = useEMCStore()
 
 const selectedStandard = ref('')
 const measurementData = ref<Array<{frequency: number, amplitude: number}>>([])
+const standardMasks = ref<{ [key: string]: Array<{frequency: number, amplitude: number}> }>({})
 
 const standardMask = computed(() => {
   return emcStore.getStandardMask(selectedStandard.value)
+})
+
+// Load multiple masks when standard changes
+watch(selectedStandard, async (newStandard) => {
+  if (newStandard) {
+    try {
+      const masks = await emcStore.getStandardMasks(newStandard)
+      standardMasks.value = masks
+      console.log('📊 Loaded masks for', newStandard, ':', Object.keys(masks))
+    } catch (error) {
+      console.error('❌ Error loading masks:', error)
+      standardMasks.value = {}
+    }
+  } else {
+    standardMasks.value = {}
+  }
 })
 
 const handleFilesUploaded = (files: File[]) => {

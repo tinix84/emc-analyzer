@@ -50,7 +50,22 @@
       </div>
       <div v-if="showMask && standardMask.length > 0" class="flex items-center space-x-2">
         <div class="w-4 h-4 bg-red-500 rounded"></div>
-        <span>EMC Limit</span>
+        <span>EMC Limit (Legacy)</span>
+      </div>
+      <!-- Multiple Masks Legend -->
+      <div v-if="showMask && standardMasks && Object.keys(standardMasks).length > 0" class="flex gap-4">
+        <div v-if="standardMasks.avg && standardMasks.avg.length > 0" class="flex items-center space-x-2">
+          <div class="w-4 h-4 bg-green-500 rounded"></div>
+          <span>AVG Limit</span>
+        </div>
+        <div v-if="standardMasks.qp && standardMasks.qp.length > 0" class="flex items-center space-x-2">
+          <div class="w-4 h-4 bg-orange-500 rounded"></div>
+          <span>QP Limit</span>
+        </div>
+        <div v-if="standardMasks.pk && standardMasks.pk.length > 0" class="flex items-center space-x-2">
+          <div class="w-4 h-4 bg-purple-500 rounded"></div>
+          <span>PK Limit</span>
+        </div>
       </div>
     </div>
 
@@ -111,6 +126,7 @@ Chart.register(
 const props = defineProps<{
   measurementData: Array<{frequency: number, amplitude: number}>
   standardMask: Array<{frequency: number, amplitude: number}>
+  standardMasks?: { [key: string]: Array<{frequency: number, amplitude: number}> }
 }>()
 
 const chartCanvas = ref<HTMLCanvasElement>()
@@ -175,10 +191,10 @@ const createChart = () => {
     })
   }
 
-  // Standard mask
+  // Standard mask (legacy)
   if (showMask.value && props.standardMask.length > 0) {
     datasets.push({
-      label: 'EMC Limit',
+      label: 'EMC Limit (Legacy)',
       data: props.standardMask.map(point => ({
         x: point.frequency,
         y: point.amplitude
@@ -189,6 +205,37 @@ const createChart = () => {
       pointRadius: 0,
       tension: 0.1,
       fill: false
+    })
+  }
+
+  // Multiple standard masks (AVG, QP, PK)
+  if (showMask.value && props.standardMasks && Object.keys(props.standardMasks).length > 0) {
+    const maskColors = {
+      avg: { border: 'rgb(34, 197, 94)', background: 'rgba(34, 197, 94, 0.1)' }, // green-500
+      qp: { border: 'rgb(249, 115, 22)', background: 'rgba(249, 115, 22, 0.1)' }, // orange-500
+      pk: { border: 'rgb(147, 51, 234)', background: 'rgba(147, 51, 234, 0.1)' }  // purple-500
+    }
+
+    Object.entries(props.standardMasks).forEach(([maskType, maskData]) => {
+      if (maskData && maskData.length > 0) {
+        const colors = maskColors[maskType as keyof typeof maskColors] || 
+                      { border: 'rgb(156, 163, 175)', background: 'rgba(156, 163, 175, 0.1)' }
+        
+        datasets.push({
+          label: `${maskType.toUpperCase()} Limit`,
+          data: maskData.map(point => ({
+            x: point.frequency,
+            y: point.amplitude
+          })),
+          borderColor: colors.border,
+          backgroundColor: colors.background,
+          borderWidth: 2,
+          pointRadius: 0,
+          tension: 0.1,
+          fill: false,
+          borderDash: maskType === 'pk' ? [5, 5] : maskType === 'qp' ? [10, 5] : []
+        })
+      }
     })
   }
 
@@ -297,10 +344,10 @@ const updateChart = () => {
     })
   }
 
-  // Standard mask
+  // Standard mask (legacy)
   if (showMask.value && props.standardMask.length > 0) {
     datasets.push({
-      label: 'EMC Limit',
+      label: 'EMC Limit (Legacy)',
       data: props.standardMask.map(point => ({
         x: point.frequency,
         y: point.amplitude
@@ -311,6 +358,37 @@ const updateChart = () => {
       pointRadius: 0,
       tension: 0.1,
       fill: false
+    })
+  }
+
+  // Multiple standard masks (AVG, QP, PK)
+  if (showMask.value && props.standardMasks && Object.keys(props.standardMasks).length > 0) {
+    const maskColors = {
+      avg: { border: 'rgb(34, 197, 94)', background: 'rgba(34, 197, 94, 0.1)' }, // green-500
+      qp: { border: 'rgb(249, 115, 22)', background: 'rgba(249, 115, 22, 0.1)' }, // orange-500
+      pk: { border: 'rgb(147, 51, 234)', background: 'rgba(147, 51, 234, 0.1)' }  // purple-500
+    }
+
+    Object.entries(props.standardMasks).forEach(([maskType, maskData]) => {
+      if (maskData && maskData.length > 0) {
+        const colors = maskColors[maskType as keyof typeof maskColors] || 
+                      { border: 'rgb(156, 163, 175)', background: 'rgba(156, 163, 175, 0.1)' }
+        
+        datasets.push({
+          label: `${maskType.toUpperCase()} Limit`,
+          data: maskData.map(point => ({
+            x: point.frequency,
+            y: point.amplitude
+          })),
+          borderColor: colors.border,
+          backgroundColor: colors.background,
+          borderWidth: 2,
+          pointRadius: 0,
+          tension: 0.1,
+          fill: false,
+          borderDash: maskType === 'pk' ? [5, 5] : maskType === 'qp' ? [10, 5] : []
+        })
+      }
     })
   }
 
@@ -363,7 +441,7 @@ const formatFrequency = (freq: number): string => {
 }
 
 // Watchers with better error handling
-watch([() => props.measurementData, () => props.standardMask], () => {
+watch([() => props.measurementData, () => props.standardMask, () => props.standardMasks], () => {
   try {
     updateChart()
   } catch (error) {
