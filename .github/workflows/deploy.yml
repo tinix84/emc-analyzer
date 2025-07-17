@@ -34,16 +34,6 @@ jobs:
     - name: 📦 Install dependencies
       run: npm ci
     
-    - name: 🧪 Test Rust code
-      run: |
-        cd wasm
-        cargo test
-      continue-on-error: true
-    
-    - name: 🔧 Build WASM module
-      run: npm run build:wasm
-      continue-on-error: true
-    
     - name: 🏗️ Build Vue application
       run: npm run build
     

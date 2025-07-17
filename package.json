@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:full": "npm run build:wasm && npm run build",
     "build:check": "vue-tsc && vite build",
     "preview": "vite preview",
     "build:wasm": "cd wasm && wasm-pack build --target web --out-dir ../public/wasm"

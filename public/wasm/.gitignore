@@ -1,0 +1,5 @@
+# Allow WASM build artifacts for Vercel deployment
+!*.wasm
+!*.js
+!*.d.ts
+!package.json

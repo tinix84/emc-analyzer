@@ -1,0 +1,15 @@
+{
+  "name": "emc-wasm",
+  "type": "module",
+  "version": "0.1.0",
+  "files": [
+    "emc_wasm_bg.wasm",
+    "emc_wasm.js",
+    "emc_wasm.d.ts"
+  ],
+  "main": "emc_wasm.js",
+  "types": "emc_wasm.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}
