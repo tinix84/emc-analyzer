@@ -18,5 +18,5 @@ export default defineConfig({
     assetsDir: 'assets'
   },
   publicDir: 'public',
-  base: process.env.NODE_ENV === 'production' ? '/nuxtjs-boilerplate/' : '/'
+  base: '/'
 })
