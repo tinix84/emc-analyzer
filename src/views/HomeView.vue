@@ -48,8 +48,7 @@
         📋 Select EMC Standard
       </h2>
       <StandardSelector 
-        :selected-standards="selectedStandards"
-          :selected-standard="selectedStandard"
+        :selected-standard="selectedStandard"
         @standard-changed="handleStandardChanged" 
       />
     </div>

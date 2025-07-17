@@ -178,8 +178,8 @@ const createChart = () => {
     datasets.push({
       label: 'Measurement Data',
       data: props.measurementData.map(point => ({
-        x: point.frequency,
-        y: point.amplitude
+        x: Number(point.frequency),
+        y: Number(point.amplitude)
       })),
       borderColor: 'rgb(59, 130, 246)', // blue-500
       backgroundColor: 'rgba(59, 130, 246, 0.1)',
@@ -196,8 +196,8 @@ const createChart = () => {
     datasets.push({
       label: 'EMC Limit (Legacy)',
       data: props.standardMask.map(point => ({
-        x: point.frequency,
-        y: point.amplitude
+        x: Number(point.frequency),
+        y: Number(point.amplitude)
       })),
       borderColor: 'rgb(239, 68, 68)', // red-500
       backgroundColor: 'rgba(239, 68, 68, 0.1)',
@@ -224,8 +224,8 @@ const createChart = () => {
         datasets.push({
           label: `${maskType.toUpperCase()} Limit`,
           data: maskData.map(point => ({
-            x: point.frequency,
-            y: point.amplitude
+            x: Number(point.frequency),
+            y: Number(point.amplitude)
           })),
           borderColor: colors.border,
           backgroundColor: colors.background,
@@ -322,6 +322,7 @@ const updateChart = () => {
   console.log('📈 Updating chart with:')
   console.log('  - Measurement data points:', props.measurementData.length)
   console.log('  - Standard mask points:', props.standardMask.length)
+  console.log('  - Standard masks:', props.standardMasks ? Object.keys(props.standardMasks) : 'none')
   console.log('  - Show mask:', showMask.value)
 
   const datasets: any[] = []
@@ -331,8 +332,8 @@ const updateChart = () => {
     datasets.push({
       label: 'Measurement Data',
       data: props.measurementData.map(point => ({
-        x: point.frequency,
-        y: point.amplitude
+        x: Number(point.frequency),
+        y: Number(point.amplitude)
       })),
       borderColor: 'rgb(59, 130, 246)',
       backgroundColor: 'rgba(59, 130, 246, 0.1)',
@@ -349,8 +350,8 @@ const updateChart = () => {
     datasets.push({
       label: 'EMC Limit (Legacy)',
       data: props.standardMask.map(point => ({
-        x: point.frequency,
-        y: point.amplitude
+        x: Number(point.frequency),
+        y: Number(point.amplitude)
       })),
       borderColor: 'rgb(239, 68, 68)',
       backgroundColor: 'rgba(239, 68, 68, 0.1)',
@@ -377,8 +378,8 @@ const updateChart = () => {
         datasets.push({
           label: `${maskType.toUpperCase()} Limit`,
           data: maskData.map(point => ({
-            x: point.frequency,
-            y: point.amplitude
+            x: Number(point.frequency),
+            y: Number(point.amplitude)
           })),
           borderColor: colors.border,
           backgroundColor: colors.background,
@@ -404,12 +405,20 @@ const updateChart = () => {
       chart.value.options.scales.y.grid.display = showGrid.value
     }
     
-    // Use 'resize' mode to prevent scale issues
-    chart.value.update('resize')
+    // Use 'none' mode to prevent animations and reduce recursion risk
+    chart.value.update('none')
   } catch (error) {
     console.error('⚠️ Chart update failed, recreating chart:', error)
-    // If update fails, recreate the chart
-    createChart()
+    // If update fails, recreate the chart safely
+    try {
+      if (chart.value) {
+        chart.value.destroy()
+        chart.value = undefined
+      }
+      setTimeout(() => createChart(), 100) // Delay recreation to prevent recursion
+    } catch (recreateError) {
+      console.error('❌ Chart recreation also failed:', recreateError)
+    }
   }
 }
 
