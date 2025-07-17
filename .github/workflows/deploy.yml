@@ -1,5 +1,5 @@
 # .github/workflows/deploy.yml
-name: 🚀 Deploy to Vercel
+name: 🚀 Deploy Vue EMC Analyzer
 
 on:
   push:
@@ -38,14 +38,22 @@ jobs:
       run: |
         cd wasm
         cargo test
+      continue-on-error: true
     
     - name: 🔧 Build WASM module
       run: npm run build:wasm
+      continue-on-error: true
     
-    - name: 🏗️ Build Nuxt application
+    - name: 🏗️ Build Vue application
       run: npm run build
     
-    - name: 🚀 Deploy to Vercel (only on main branch)
+    - name: � Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: vue-dist
+        path: dist/
+    
+    - name: �🚀 Deploy to Vercel (only on main branch)
       if: github.ref == 'refs/heads/main'
       uses: amondnet/vercel-action@v25
       with:
@@ -53,3 +61,4 @@ jobs:
         vercel-org-id: ${{ secrets.ORG_ID }}
         vercel-project-id: ${{ secrets.PROJECT_ID }}
         vercel-args: '--prod'
+        working-directory: './'

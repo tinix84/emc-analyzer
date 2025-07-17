@@ -1,4 +1,3 @@
-<!-- // pages/index.vue -->
 <template>
   <div class="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
     <div class="container mx-auto px-4 py-8">
@@ -45,8 +44,51 @@
         </div>
       </div>
 
-      <!-- Debug Panel (remove this in production) -->
-      <WasmDebugPanel />
+      <!-- Demo Links Section -->
+      <div class="mb-8">
+        <h2 class="text-3xl font-bold text-center mb-6 text-gray-800">
+          🎯 Demo Pages
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          <DemoCard 
+            title="Vue EMC Prototype"
+            description="Complete EMC analysis interface with Vue components"
+            url="/vue-emc-prototype.html"
+            icon="🔬"
+          />
+          <DemoCard 
+            title="Vue WASM Demo"
+            description="Vue + WebAssembly integration demonstration"
+            url="/vue-emc-wasm-demo.html"
+            icon="🦀"
+          />
+          <DemoCard 
+            title="Pure Vue WASM Test"
+            description="Minimal Vue + WASM test implementation"
+            url="/pure-vue-wasm-test.html"
+            icon="⚡"
+          />
+          <DemoCard 
+            title="Simple WASM Test"
+            description="Basic WebAssembly functionality test"
+            url="/simple-wasm-test.html"
+            icon="🧪"
+          />
+          <DemoCard 
+            title="Basic Test"
+            description="Fundamental test page for debugging"
+            url="/test.html"
+            icon="🔧"
+          />
+          <DemoCard 
+            title="Jupyter Notebook"
+            description="Complete validation workflow with Python"
+            url="/notebooks"
+            icon="📓"
+            external="true"
+          />
+        </div>
+      </div>
 
       <!-- Main Content -->
       <div v-if="!wasm.isLoading && !wasm.error">
