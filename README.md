@@ -13,6 +13,26 @@ A high-performance EMC compliance analyzer built with **Nuxt 3** and **Rust WebA
 - **🔄 Real-time Analysis**: Instant compliance checking and visualization
 - **💾 Offline Capable**: No backend required, works entirely in browser
 - **🆓 Free Hosting**: Deploy to Vercel for free with automatic builds
+- **📓 Jupyter Integration**: Complete validation workflow with notebooks
+- **📁 Organized Structure**: Professional project organization for scalability
+
+## 📁 Project Structure
+
+```
+├── 📂 wasm/                    # Rust WASM EMC analysis engine
+├── 📂 data/                    # Organized data files
+│   ├── emc-standards/         # EMC standard definitions (CSV)
+│   ├── measurements/          # Spectrum analyzer data (TXT)
+│   └── emc_analysis_results/  # Generated reports
+├── 📂 notebooks/              # Jupyter validation notebooks  
+├── 📂 demos/                  # HTML demo files
+├── 📂 docs/                   # Documentation
+├── 📂 pages/                  # Nuxt.js pages
+├── 📂 components/             # Vue components
+└── 📂 composables/            # Vue composables
+```
+
+See [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) for detailed organization.
 
 ## 🛠️ Tech Stack
 

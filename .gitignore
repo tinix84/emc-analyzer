@@ -17,6 +17,19 @@ wasm/pkg/
 wasm/Cargo.lock
 public/wasm/
 
+# Data files (keep examples, ignore user data)
+data/emc_analysis_results/
+data/measurements/*.txt
+!data/measurements/sample_measurements.txt
+!data/measurements/README.md
+data/emc-standards/*.csv
+!data/emc-standards/sample_emc_standard.csv
+!data/emc-standards/README.md
+
+# Jupyter Notebook checkpoints and outputs
+notebooks/.ipynb_checkpoints/
+notebooks/__pycache__/
+
 # Runtime data
 *.pid
 *.seed

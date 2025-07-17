@@ -3,6 +3,9 @@ use wasm_bindgen::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+// Include frequency helpers module
+mod frequency_helpers;
+
 #[wasm_bindgen]
 extern "C" {
     fn alert(s: &str);
