@@ -87,6 +87,7 @@ import {
   LogarithmicScale,
   LineElement,
   PointElement,
+  LineController,
   Title,
   Tooltip,
   Legend,
@@ -100,6 +101,7 @@ Chart.register(
   LogarithmicScale,
   LineElement,
   PointElement,
+  LineController,
   Title,
   Tooltip,
   Legend,
@@ -147,6 +149,11 @@ const createChart = () => {
   const ctx = chartCanvas.value.getContext('2d')
   if (!ctx) return
 
+  // Clear any existing chart
+  if (chart.value) {
+    chart.value.destroy()
+  }
+
   const datasets = []
 
   // Measurement data
@@ -162,7 +169,8 @@ const createChart = () => {
       borderWidth: 2,
       pointRadius: 1,
       pointHoverRadius: 4,
-      tension: 0.1
+      tension: 0.1,
+      fill: false
     })
   }
 
@@ -183,69 +191,81 @@ const createChart = () => {
     })
   }
 
-  chart.value = new Chart(ctx, {
-    type: 'line',
-    data: { datasets },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: {
-        intersect: false,
-        mode: 'index'
-      },
-      plugins: {
-        title: {
-          display: true,
-          text: 'EMC Measurement - Semi-Logarithmic Plot'
+  try {
+    chart.value = new Chart(ctx, {
+      type: 'line',
+      data: { datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          intersect: false,
+          mode: 'index'
         },
-        tooltip: {
-          callbacks: {
-            title: (context) => {
-              return `Frequency: ${formatFrequency(context[0].parsed.x)}`
+        plugins: {
+          title: {
+            display: true,
+            text: 'EMC Measurement - Semi-Logarithmic Plot'
+          },
+          tooltip: {
+            callbacks: {
+              title: (context) => {
+                return `Frequency: ${formatFrequency(context[0].parsed.x)}`
+              },
+              label: (context) => {
+                return `${context.dataset.label}: ${context.parsed.y.toFixed(2)} dBμV`
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            type: 'logarithmic',
+            display: true,
+            title: {
+              display: true,
+              text: 'Frequency (MHz)'
             },
-            label: (context) => {
-              return `${context.dataset.label}: ${context.parsed.y.toFixed(2)} dBμV`
+            grid: {
+              display: showGrid.value
+            },
+            ticks: {
+              callback: function(value) {
+                return formatFrequency(value as number)
+              }
             }
-          }
-        }
-      },
-      scales: {
-        x: {
-          type: 'logarithmic',
-          display: true,
-          title: {
+          },
+          y: {
+            type: 'linear',
             display: true,
-            text: 'Frequency (MHz)'
-          },
-          grid: {
-            display: showGrid.value
-          },
-          ticks: {
-            callback: function(value) {
-              return formatFrequency(value as number)
+            title: {
+              display: true,
+              text: 'Amplitude (dBμV)'
+            },
+            grid: {
+              display: showGrid.value
             }
-          }
-        },
-        y: {
-          type: 'linear',
-          display: true,
-          title: {
-            display: true,
-            text: 'Amplitude (dBμV)'
-          },
-          grid: {
-            display: showGrid.value
           }
         }
       }
+    })
+    
+    console.log('📊 Chart created successfully')
+  } catch (error) {
+    console.error('❌ Error creating chart:', error)
+    // Fallback: show simple message
+    if (ctx) {
+      ctx.fillStyle = '#666'
+      ctx.font = '16px Arial'
+      ctx.fillText('Chart unavailable - check console for details', 50, 50)
     }
-  })
+  }
 }
 
 const updateChart = () => {
   if (!chart.value) return
 
-  const datasets = []
+  const datasets: any[] = []
 
   // Measurement data
   if (props.measurementData.length > 0) {
@@ -260,7 +280,8 @@ const updateChart = () => {
       borderWidth: 2,
       pointRadius: 1,
       pointHoverRadius: 4,
-      tension: 0.1
+      tension: 0.1,
+      fill: false
     })
   }
 
@@ -295,7 +316,8 @@ const updateChart = () => {
 
 const resetZoom = () => {
   if (chart.value) {
-    chart.value.resetZoom()
+    // Simple reset by recreating the chart
+    createChart()
   }
 }
 
