@@ -9,7 +9,7 @@
             v-model="showMask"
             class="rounded"
           >
-          <span class="text-sm">Show Standard Mask</span>
+          <span class="text-sm text-white">Show Standard Mask</span>
         </label>
         <label class="flex items-center space-x-2">
           <input 
@@ -17,14 +17,14 @@
             v-model="showGrid"
             class="rounded"
           >
-          <span class="text-sm">Show Grid</span>
+          <span class="text-sm text-white">Show Grid</span>
         </label>
       </div>
       
       <div class="flex gap-2">
         <button
           @click="resetZoom"
-          class="px-3 py-1 text-sm bg-gray-200 hover:bg-gray-300 rounded transition-colors duration-200"
+          class="px-3 py-1 text-sm bg-gray-600 hover:bg-gray-500 text-white rounded transition-colors duration-200"
         >
           Reset Zoom
         </button>
@@ -38,12 +38,12 @@
     </div>
 
     <!-- Chart Container -->
-    <div class="bg-white border rounded-lg p-4" style="height: 500px;">
+    <div class="bg-white border border-gray-600 rounded-lg p-4" style="height: 500px;">
       <canvas ref="chartCanvas"></canvas>
     </div>
 
     <!-- Chart Legend -->
-    <div class="flex flex-wrap gap-4 text-sm">
+    <div class="flex flex-wrap gap-4 text-sm text-white">
       <div class="flex items-center space-x-2" v-if="measurementData.length > 0">
         <div class="w-4 h-4 bg-red-500 rounded" v-if="hasThreeColumnData"></div>
         <div class="w-4 h-4 bg-blue-500 rounded" v-else></div>
@@ -73,23 +73,23 @@
 
     <!-- Statistics -->
     <div v-if="measurementData.length > 0" class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-      <div class="bg-gray-50 p-3 rounded">
-        <div class="text-gray-600">Data Points</div>
-        <div class="text-lg font-semibold">{{ measurementData.length }}</div>
+      <div class="bg-gray-700 p-3 rounded border border-gray-600">
+        <div class="text-gray-300">Data Points</div>
+        <div class="text-lg font-semibold text-white">{{ measurementData.length }}</div>
       </div>
-      <div class="bg-gray-50 p-3 rounded">
-        <div class="text-gray-600">Freq Range</div>
-        <div class="text-lg font-semibold">
+      <div class="bg-gray-700 p-3 rounded border border-gray-600">
+        <div class="text-gray-300">Freq Range</div>
+        <div class="text-lg font-semibold text-white">
           {{ formatFrequency(minFreq) }} - {{ formatFrequency(maxFreq) }}
         </div>
       </div>
-      <div class="bg-gray-50 p-3 rounded">
-        <div class="text-gray-600">Max Amplitude</div>
-        <div class="text-lg font-semibold">{{ maxAmplitude.toFixed(1) }} dBμV</div>
+      <div class="bg-gray-700 p-3 rounded border border-gray-600">
+        <div class="text-gray-300">Max Amplitude</div>
+        <div class="text-lg font-semibold text-white">{{ maxAmplitude.toFixed(1) }} dBμV</div>
       </div>
-      <div class="bg-gray-50 p-3 rounded">
-        <div class="text-gray-600">Min Amplitude</div>
-        <div class="text-lg font-semibold">{{ minAmplitude.toFixed(1) }} dBμV</div>
+      <div class="bg-gray-700 p-3 rounded border border-gray-600">
+        <div class="text-gray-300">Min Amplitude</div>
+        <div class="text-lg font-semibold text-white">{{ minAmplitude.toFixed(1) }} dBμV</div>
       </div>
     </div>
   </div>

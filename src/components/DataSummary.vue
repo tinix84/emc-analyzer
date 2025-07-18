@@ -7,38 +7,38 @@
         <div 
           class="p-4 rounded-lg border-2"
           :class="{
-            'border-green-500 bg-green-50': complianceStatus.isCompliant,
-            'border-red-500 bg-red-50': !complianceStatus.isCompliant
+            'border-green-500 bg-green-900/20': complianceStatus.isCompliant,
+            'border-red-500 bg-red-900/20': !complianceStatus.isCompliant
           }"
         >
           <div class="text-center">
             <div class="text-3xl mb-2">
               {{ complianceStatus.isCompliant ? '✅' : '❌' }}
             </div>
-            <div class="font-semibold text-lg">
+            <div class="font-semibold text-lg text-white">
               {{ complianceStatus.isCompliant ? 'COMPLIANT' : 'NON-COMPLIANT' }}
             </div>
-            <div class="text-sm text-gray-600 mt-1">
+            <div class="text-sm text-gray-300 mt-1">
               Overall Status
             </div>
           </div>
         </div>
 
-        <div class="p-4 bg-gray-50 rounded-lg">
+        <div class="p-4 bg-gray-700 rounded-lg border border-gray-600">
           <div class="text-center">
             <div class="text-3xl mb-2">🔍</div>
-            <div class="font-semibold text-lg">{{ complianceStatus.violations }}</div>
-            <div class="text-sm text-gray-600">
+            <div class="font-semibold text-lg text-white">{{ complianceStatus.violations }}</div>
+            <div class="text-sm text-gray-300">
               Total Violations
             </div>
           </div>
         </div>
 
-        <div class="p-4 bg-gray-50 rounded-lg">
+        <div class="p-4 bg-gray-700 rounded-lg border border-gray-600">
           <div class="text-center">
             <div class="text-3xl mb-2">📊</div>
-            <div class="font-semibold text-lg">{{ complianceStatus.totalPoints }}</div>
-            <div class="text-sm text-gray-600">
+            <div class="font-semibold text-lg text-white">{{ complianceStatus.totalPoints }}</div>
+            <div class="text-sm text-gray-300">
               Total Data Points
             </div>
           </div>
@@ -47,21 +47,21 @@
 
       <!-- Detailed Status for 3-column data -->
       <div v-if="complianceStatus.hasThreeColumns" class="grid md:grid-cols-2 gap-4">
-        <div class="p-4 bg-red-50 rounded-lg border border-red-200">
+        <div class="p-4 bg-red-900/20 rounded-lg border border-red-600">
           <div class="text-center">
             <div class="text-2xl mb-2">🔴</div>
-            <div class="font-semibold text-lg text-red-800">{{ complianceStatus.peakViolations }}</div>
-            <div class="text-sm text-red-600">
+            <div class="font-semibold text-lg text-red-300">{{ complianceStatus.peakViolations }}</div>
+            <div class="text-sm text-red-400">
               Peak Violations
             </div>
           </div>
         </div>
 
-        <div class="p-4 bg-green-50 rounded-lg border border-green-200">
+        <div class="p-4 bg-green-900/20 rounded-lg border border-green-600">
           <div class="text-center">
             <div class="text-2xl mb-2">🟢</div>
-            <div class="font-semibold text-lg text-green-800">{{ complianceStatus.avgViolations }}</div>
-            <div class="text-sm text-green-600">
+            <div class="font-semibold text-lg text-green-300">{{ complianceStatus.avgViolations }}</div>
+            <div class="text-sm text-green-400">
               Average Violations
             </div>
           </div>
@@ -72,75 +72,75 @@
     <!-- Statistical Analysis -->
     <div class="grid md:grid-cols-2 gap-6">
       <!-- Frequency Analysis -->
-      <div class="bg-white border rounded-lg p-4">
-        <h3 class="text-lg font-semibold mb-4 flex items-center">
+      <div class="bg-gray-700 border border-gray-600 rounded-lg p-4">
+        <h3 class="text-lg font-semibold mb-4 flex items-center text-white">
           📈 Frequency Analysis
         </h3>
         <div class="space-y-3">
           <div class="flex justify-between">
-            <span class="text-gray-600">Frequency Range:</span>
-            <span class="font-medium">
+            <span class="text-gray-300">Frequency Range:</span>
+            <span class="font-medium text-white">
               {{ formatFrequency(freqStats.min) }} - {{ formatFrequency(freqStats.max) }}
             </span>
           </div>
           <div class="flex justify-between">
-            <span class="text-gray-600">Frequency Span:</span>
-            <span class="font-medium">{{ formatFrequency(freqStats.span) }}</span>
+            <span class="text-gray-300">Frequency Span:</span>
+            <span class="font-medium text-white">{{ formatFrequency(freqStats.span) }}</span>
           </div>
           <div class="flex justify-between">
-            <span class="text-gray-600">Data Density:</span>
-            <span class="font-medium">{{ freqStats.density.toFixed(2) }} points/MHz</span>
+            <span class="text-gray-300">Data Density:</span>
+            <span class="font-medium text-white">{{ freqStats.density.toFixed(2) }} points/MHz</span>
           </div>
         </div>
       </div>
 
       <!-- Amplitude Analysis -->
-      <div class="bg-white border rounded-lg p-4">
-        <h3 class="text-lg font-semibold mb-4 flex items-center">
+      <div class="bg-gray-700 border border-gray-600 rounded-lg p-4">
+        <h3 class="text-lg font-semibold mb-4 flex items-center text-white">
           📊 Amplitude Analysis
         </h3>
         <div class="space-y-3">
           <div v-if="amplitudeStats.hasThreeColumns">
             <!-- 3-column data stats -->
             <div class="mb-4">
-              <h4 class="font-medium text-gray-700 mb-2">Peak Values</h4>
+              <h4 class="font-medium text-gray-200 mb-2">Peak Values</h4>
               <div class="space-y-2 text-sm">
                 <div class="flex justify-between">
-                  <span class="text-gray-600">Maximum:</span>
-                  <span class="font-medium">{{ amplitudeStats.peak?.max.toFixed(2) }} dBμV</span>
+                  <span class="text-gray-300">Maximum:</span>
+                  <span class="font-medium text-white">{{ amplitudeStats.peak?.max.toFixed(2) }} dBμV</span>
                 </div>
                 <div class="flex justify-between">
-                  <span class="text-gray-600">Minimum:</span>
-                  <span class="font-medium">{{ amplitudeStats.peak?.min.toFixed(2) }} dBμV</span>
+                  <span class="text-gray-300">Minimum:</span>
+                  <span class="font-medium text-white">{{ amplitudeStats.peak?.min.toFixed(2) }} dBμV</span>
                 </div>
                 <div class="flex justify-between">
-                  <span class="text-gray-600">Average:</span>
-                  <span class="font-medium">{{ amplitudeStats.peak?.avg.toFixed(2) }} dBμV</span>
+                  <span class="text-gray-300">Average:</span>
+                  <span class="font-medium text-white">{{ amplitudeStats.peak?.avg.toFixed(2) }} dBμV</span>
                 </div>
                 <div class="flex justify-between">
-                  <span class="text-gray-600">Std Deviation:</span>
-                  <span class="font-medium">{{ amplitudeStats.peak?.std.toFixed(2) }} dB</span>
+                  <span class="text-gray-300">Std Deviation:</span>
+                  <span class="font-medium text-white">{{ amplitudeStats.peak?.std.toFixed(2) }} dB</span>
                 </div>
               </div>
             </div>
             <div>
-              <h4 class="font-medium text-gray-700 mb-2">Average Values</h4>
+              <h4 class="font-medium text-gray-200 mb-2">Average Values</h4>
               <div class="space-y-2 text-sm">
                 <div class="flex justify-between">
-                  <span class="text-gray-600">Maximum:</span>
-                  <span class="font-medium">{{ amplitudeStats.average?.max.toFixed(2) }} dBμV</span>
+                  <span class="text-gray-300">Maximum:</span>
+                  <span class="font-medium text-white">{{ amplitudeStats.average?.max.toFixed(2) }} dBμV</span>
                 </div>
                 <div class="flex justify-between">
-                  <span class="text-gray-600">Minimum:</span>
-                  <span class="font-medium">{{ amplitudeStats.average?.min.toFixed(2) }} dBμV</span>
+                  <span class="text-gray-300">Minimum:</span>
+                  <span class="font-medium text-white">{{ amplitudeStats.average?.min.toFixed(2) }} dBμV</span>
                 </div>
                 <div class="flex justify-between">
-                  <span class="text-gray-600">Average:</span>
-                  <span class="font-medium">{{ amplitudeStats.average?.avg.toFixed(2) }} dBμV</span>
+                  <span class="text-gray-300">Average:</span>
+                  <span class="font-medium text-white">{{ amplitudeStats.average?.avg.toFixed(2) }} dBμV</span>
                 </div>
                 <div class="flex justify-between">
-                  <span class="text-gray-600">Std Deviation:</span>
-                  <span class="font-medium">{{ amplitudeStats.average?.std.toFixed(2) }} dB</span>
+                  <span class="text-gray-300">Std Deviation:</span>
+                  <span class="font-medium text-white">{{ amplitudeStats.average?.std.toFixed(2) }} dB</span>
                 </div>
               </div>
             </div>
@@ -148,20 +148,20 @@
           <div v-else>
             <!-- 2-column data stats -->
             <div class="flex justify-between">
-              <span class="text-gray-600">Maximum:</span>
-              <span class="font-medium">{{ amplitudeStats.max?.toFixed(2) }} dBμV</span>
+              <span class="text-gray-300">Maximum:</span>
+              <span class="font-medium text-white">{{ amplitudeStats.max?.toFixed(2) }} dBμV</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-gray-600">Minimum:</span>
-              <span class="font-medium">{{ amplitudeStats.min?.toFixed(2) }} dBμV</span>
+              <span class="text-gray-300">Minimum:</span>
+              <span class="font-medium text-white">{{ amplitudeStats.min?.toFixed(2) }} dBμV</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-gray-600">Average:</span>
-              <span class="font-medium">{{ amplitudeStats.avg?.toFixed(2) }} dBμV</span>
+              <span class="text-gray-300">Average:</span>
+              <span class="font-medium text-white">{{ amplitudeStats.avg?.toFixed(2) }} dBμV</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-gray-600">Std Deviation:</span>
-              <span class="font-medium">{{ amplitudeStats.std?.toFixed(2) }} dB</span>
+              <span class="text-gray-300">Std Deviation:</span>
+              <span class="font-medium text-white">{{ amplitudeStats.std?.toFixed(2) }} dB</span>
             </div>
           </div>
         </div>
@@ -169,8 +169,8 @@
     </div>
 
     <!-- Violations Detail -->
-    <div v-if="violations.combined.length > 0" class="bg-red-50 border border-red-200 rounded-lg p-4">
-      <h3 class="text-lg font-semibold text-red-800 mb-4 flex items-center">
+    <div v-if="violations.combined.length > 0" class="bg-red-900/20 border border-red-600 rounded-lg p-4">
+      <h3 class="text-lg font-semibold text-red-300 mb-4 flex items-center">
         ⚠️ Compliance Violations
       </h3>
       
@@ -178,27 +178,27 @@
       <div v-if="violations.hasThreeColumns" class="space-y-6">
         <!-- Peak Violations -->
         <div v-if="violations.peak.length > 0">
-          <h4 class="font-medium text-red-700 mb-2">🔴 Peak Violations ({{ violations.peak.length }})</h4>
+          <h4 class="font-medium text-red-200 mb-2">🔴 Peak Violations ({{ violations.peak.length }})</h4>
           <div class="overflow-x-auto">
             <table class="min-w-full text-sm">
               <thead>
-                <tr class="bg-red-100">
-                  <th class="px-3 py-2 text-left text-red-800">Frequency</th>
-                  <th class="px-3 py-2 text-left text-red-800">Peak Value</th>
-                  <th class="px-3 py-2 text-left text-red-800">Limit</th>
-                  <th class="px-3 py-2 text-left text-red-800">Violation</th>
+                <tr class="bg-red-900/30">
+                  <th class="px-3 py-2 text-left text-red-200">Frequency</th>
+                  <th class="px-3 py-2 text-left text-red-200">Peak Value</th>
+                  <th class="px-3 py-2 text-left text-red-200">Limit</th>
+                  <th class="px-3 py-2 text-left text-red-200">Violation</th>
                 </tr>
               </thead>
               <tbody>
                 <tr 
                   v-for="(violation, index) in violations.peak.slice(0, 5)"
                   :key="index"
-                  class="border-b border-red-200"
+                  class="border-b border-red-700"
                 >
-                  <td class="px-3 py-2 text-red-700">{{ formatFrequency(violation.frequency) }}</td>
-                  <td class="px-3 py-2 text-red-700 font-medium">{{ violation.measured.toFixed(2) }} dBμV</td>
-                  <td class="px-3 py-2 text-red-700">{{ violation.limit.toFixed(2) }} dBμV</td>
-                  <td class="px-3 py-2 text-red-700 font-medium">
+                  <td class="px-3 py-2 text-red-300">{{ formatFrequency(violation.frequency) }}</td>
+                  <td class="px-3 py-2 text-red-300 font-medium">{{ violation.measured.toFixed(2) }} dBμV</td>
+                  <td class="px-3 py-2 text-red-300">{{ violation.limit.toFixed(2) }} dBμV</td>
+                  <td class="px-3 py-2 text-red-300 font-medium">
                     +{{ violation.excess.toFixed(2) }} dB
                   </td>
                 </tr>
@@ -209,27 +209,27 @@
         
         <!-- Average Violations -->
         <div v-if="violations.average.length > 0">
-          <h4 class="font-medium text-red-700 mb-2">🟢 Average Violations ({{ violations.average.length }})</h4>
+          <h4 class="font-medium text-red-200 mb-2">🟢 Average Violations ({{ violations.average.length }})</h4>
           <div class="overflow-x-auto">
             <table class="min-w-full text-sm">
               <thead>
-                <tr class="bg-red-100">
-                  <th class="px-3 py-2 text-left text-red-800">Frequency</th>
-                  <th class="px-3 py-2 text-left text-red-800">Average Value</th>
-                  <th class="px-3 py-2 text-left text-red-800">Limit</th>
-                  <th class="px-3 py-2 text-left text-red-800">Violation</th>
+                <tr class="bg-red-900/30">
+                  <th class="px-3 py-2 text-left text-red-200">Frequency</th>
+                  <th class="px-3 py-2 text-left text-red-200">Average Value</th>
+                  <th class="px-3 py-2 text-left text-red-200">Limit</th>
+                  <th class="px-3 py-2 text-left text-red-200">Violation</th>
                 </tr>
               </thead>
               <tbody>
                 <tr 
                   v-for="(violation, index) in violations.average.slice(0, 5)"
                   :key="index"
-                  class="border-b border-red-200"
+                  class="border-b border-red-700"
                 >
-                  <td class="px-3 py-2 text-red-700">{{ formatFrequency(violation.frequency) }}</td>
-                  <td class="px-3 py-2 text-red-700 font-medium">{{ violation.measured.toFixed(2) }} dBμV</td>
-                  <td class="px-3 py-2 text-red-700">{{ violation.limit.toFixed(2) }} dBμV</td>
-                  <td class="px-3 py-2 text-red-700 font-medium">
+                  <td class="px-3 py-2 text-red-300">{{ formatFrequency(violation.frequency) }}</td>
+                  <td class="px-3 py-2 text-red-300 font-medium">{{ violation.measured.toFixed(2) }} dBμV</td>
+                  <td class="px-3 py-2 text-red-300">{{ violation.limit.toFixed(2) }} dBμV</td>
+                  <td class="px-3 py-2 text-red-300 font-medium">
                     +{{ violation.excess.toFixed(2) }} dB
                   </td>
                 </tr>
@@ -243,23 +243,23 @@
       <div v-else class="overflow-x-auto">
         <table class="min-w-full text-sm">
           <thead>
-            <tr class="bg-red-100">
-              <th class="px-3 py-2 text-left text-red-800">Frequency</th>
-              <th class="px-3 py-2 text-left text-red-800">Measured</th>
-              <th class="px-3 py-2 text-left text-red-800">Limit</th>
-              <th class="px-3 py-2 text-left text-red-800">Violation</th>
+            <tr class="bg-red-900/30">
+              <th class="px-3 py-2 text-left text-red-200">Frequency</th>
+              <th class="px-3 py-2 text-left text-red-200">Measured</th>
+              <th class="px-3 py-2 text-left text-red-200">Limit</th>
+              <th class="px-3 py-2 text-left text-red-200">Violation</th>
             </tr>
           </thead>
           <tbody>
             <tr 
               v-for="(violation, index) in violations.combined.slice(0, 10)"
               :key="index"
-              class="border-b border-red-200"
+              class="border-b border-red-700"
             >
-              <td class="px-3 py-2 text-red-700">{{ formatFrequency(violation.frequency) }}</td>
-              <td class="px-3 py-2 text-red-700 font-medium">{{ violation.measured.toFixed(2) }} dBμV</td>
-              <td class="px-3 py-2 text-red-700">{{ violation.limit.toFixed(2) }} dBμV</td>
-              <td class="px-3 py-2 text-red-700 font-medium">
+              <td class="px-3 py-2 text-red-300">{{ formatFrequency(violation.frequency) }}</td>
+              <td class="px-3 py-2 text-red-300 font-medium">{{ violation.measured.toFixed(2) }} dBμV</td>
+              <td class="px-3 py-2 text-red-300">{{ violation.limit.toFixed(2) }} dBμV</td>
+              <td class="px-3 py-2 text-red-300 font-medium">
                 +{{ violation.excess.toFixed(2) }} dB
               </td>
             </tr>
@@ -267,9 +267,9 @@
         </table>
       </div>
       
-      <div v-if="violations.combined.length > 10" class="text-sm text-red-600 mt-2">
+      <div v-if="violations.combined.length > 10" class="text-sm text-red-300 mt-2">
         Showing {{ violations.hasThreeColumns ? '5' : '10' }} of {{ violations.combined.length }} violations. 
-        <button @click="showAllViolations = !showAllViolations" class="underline">
+        <button @click="showAllViolations = !showAllViolations" class="underline text-red-200">
           {{ showAllViolations ? 'Show less' : 'Show all' }}
         </button>
       </div>

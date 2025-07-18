@@ -2,49 +2,49 @@
   <div class="space-y-8">
     <!-- Header -->
     <div class="text-center">
-      <h1 class="text-4xl font-bold text-gray-800 mb-4">
-        📊 EMC Measurement Analyzer
+      <h1 class="text-4xl font-bold text-white mb-4">
+        ⚡ EMC Power Analyzer
       </h1>
-      <p class="text-xl text-gray-600">
+      <p class="text-xl text-gray-300">
         Upload measurement files, select EMC standards, and visualize compliance data
       </p>
     </div>
 
     <!-- Upload Section -->
-    <div class="bg-white rounded-lg shadow-md p-6">
-      <h2 class="text-2xl font-semibold mb-4 flex items-center">
+    <div class="bg-gray-800 border border-gray-700 rounded-lg p-6">
+      <h2 class="text-2xl font-semibold mb-4 flex items-center text-white">
         📁 Upload Measurement Files
       </h2>
       <FileUpload @files-uploaded="handleFilesUploaded" />
       
       <!-- Sample Files -->
-      <div class="mt-4 p-4 bg-gray-50 rounded-lg">
-        <h3 class="text-sm font-medium text-gray-700 mb-2">🧪 Test with Sample Files:</h3>
+      <div class="mt-4 p-4 bg-gray-700 rounded-lg border border-gray-600">
+        <h3 class="text-sm font-medium text-white mb-2">🧪 Test with Sample Files:</h3>
         <div class="flex gap-2">
           <a 
             href="/sample-measurement.csv" 
             download 
-            class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
+            class="px-3 py-1 bg-purple-600 text-white rounded text-sm hover:bg-purple-700 transition-colors"
           >
             📄 Download CSV Sample
           </a>
           <a 
             href="/sample-measurement.txt" 
             download 
-            class="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 transition-colors"
+            class="px-3 py-1 bg-purple-600 text-white rounded text-sm hover:bg-purple-700 transition-colors"
           >
             📄 Download TXT Sample
           </a>
         </div>
-        <p class="text-xs text-gray-500 mt-2">
+        <p class="text-xs text-gray-300 mt-2">
           Download these 3-column format files (Frequency, Peak, Avg) to test the upload functionality
         </p>
       </div>
     </div>
 
     <!-- Standard Selection -->
-    <div class="bg-white rounded-lg shadow-md p-6">
-      <h2 class="text-2xl font-semibold mb-4 flex items-center">
+    <div class="bg-gray-800 border border-gray-700 rounded-lg p-6">
+      <h2 class="text-2xl font-semibold mb-4 flex items-center text-white">
         📋 Select EMC Standard
       </h2>
       <StandardSelector 
@@ -54,8 +54,8 @@
     </div>
 
     <!-- Visualization -->
-    <div class="bg-white rounded-lg shadow-md p-6" v-if="measurementData.length > 0 || selectedStandard">
-      <h2 class="text-2xl font-semibold mb-4 flex items-center">
+    <div class="bg-gray-800 border border-gray-700 rounded-lg p-6" v-if="measurementData.length > 0 || selectedStandard">
+      <h2 class="text-2xl font-semibold mb-4 flex items-center text-white">
         📈 {{ measurementData.length > 0 ? 'Measurement Visualization' : 'EMC Standard Limits' }}
       </h2>
       <SemiLogChart 
@@ -65,17 +65,17 @@
     </div>
 
     <!-- Data Summary -->
-    <div class="bg-white rounded-lg shadow-md p-6" v-if="measurementData.length > 0">
-      <h2 class="text-2xl font-semibold mb-4">
+    <div class="bg-gray-800 border border-gray-700 rounded-lg p-6" v-if="measurementData.length > 0">
+      <h2 class="text-2xl font-semibold mb-4 text-white">
         📊 Data Summary
       </h2>
       <DataSummary :data="measurementData" :standard="selectedStandard" />
     </div>
 
     <!-- Storage Info -->
-    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm">
-      <h3 class="font-semibold text-blue-800 mb-2">💾 Data Storage Information</h3>
-      <div class="space-y-1 text-blue-700">
+    <div class="bg-gray-800 border border-gray-700 rounded-lg p-4 text-sm">
+      <h3 class="font-semibold text-white mb-2">💾 Data Storage Information</h3>
+      <div class="space-y-1 text-gray-300">
         <div><strong>Current Data:</strong> {{ measurementData.length }} measurement points</div>
         <div><strong>Storage:</strong> Browser localStorage (persists between sessions)</div>
         <div><strong>Standard:</strong> {{ selectedStandard || 'Not selected' }}</div>
