@@ -1,5 +1,6 @@
 <template>
   <div id="app" class="min-h-screen bg-gray-50">
+    <Analytics />
     <nav class="bg-white shadow-md">
       <div class="container mx-auto px-4">
         <div class="flex justify-between items-center py-4">
@@ -19,6 +20,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { Analytics } from '@vercel/analytics/vue'
 
 const version = ref('1.0.0')
 </script>

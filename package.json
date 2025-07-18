@@ -12,6 +12,7 @@
     "build:wasm": "cd wasm && wasm-pack build --target web --out-dir ../public/wasm"
   },
   "dependencies": {
+    "@vercel/analytics": "^1.5.0",
     "chart.js": "^4.4.0",
     "pinia": "^2.1.0",
     "vue": "^3.4.0",

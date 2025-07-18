@@ -37,7 +37,7 @@
           </a>
         </div>
         <p class="text-xs text-gray-500 mt-2">
-          Download these files to test the upload functionality
+          Download these 3-column format files (Frequency, Peak, Avg) to test the upload functionality
         </p>
       </div>
     </div>
@@ -158,7 +158,7 @@ const processFile = async (file: File) => {
     console.log(`✅ Parsed ${data.length} data points from ${file.name}`)
     
     if (data.length === 0) {
-      alert(`⚠️ No valid data found in ${file.name}\n\nExpected format:\nfrequency,amplitude\n150,45.2\n200,52.1\n...`)
+      alert(`⚠️ No valid data found in ${file.name}\n\nSupported formats:\n\n🔹 3-column format:\nFrequency,Peak,Avg\n[MHz],[dBuV],[dBuV]\n150,45.2,42.1\n\n🔹 2-column format:\nfrequency,amplitude\n150,45.2\n200,52.1`)
       return
     }
     
@@ -172,21 +172,52 @@ const processFile = async (file: File) => {
   }
 }
 
-const parseCSV = (text: string): Array<{frequency: number, amplitude: number}> => {
+const parseCSV = (text: string): Array<{frequency: number, amplitude: number, peak?: number, avg?: number}> => {
   console.log('🔍 Parsing CSV data...')
   const lines = text.split('\n').filter(line => line.trim())
-  const data: Array<{frequency: number, amplitude: number}> = []
+  const data: Array<{frequency: number, amplitude: number, peak?: number, avg?: number}> = []
   
   console.log(`📝 Found ${lines.length} lines`)
   
   // Skip header if exists
-  const firstLine = lines[0]?.toLowerCase() || ''
-  const hasHeader = firstLine.includes('frequency') || 
-                   firstLine.includes('freq') || 
-                   firstLine.includes('hz')
+  let headerLine = ''
+  let unitLine = ''
+  let hasHeader = false
+  let startIndex = 0
   
-  const startIndex = hasHeader ? 1 : 0
-  console.log(`📋 ${hasHeader ? 'Header detected, starting from line 2' : 'No header, starting from line 1'}`)
+  // Check for header patterns
+  for (let i = 0; i < Math.min(3, lines.length); i++) {
+    const line = lines[i].toLowerCase()
+    if (line.includes('frequency') || line.includes('peak') || line.includes('avg')) {
+      headerLine = lines[i]
+      hasHeader = true
+      startIndex = i + 1
+      break
+    }
+  }
+  
+  // Check for unit line after header
+  if (hasHeader && startIndex < lines.length) {
+    const nextLine = lines[startIndex].toLowerCase()
+    if (nextLine.includes('[mhz]') || nextLine.includes('[dbuv]') || nextLine.includes('mhz') || nextLine.includes('dbuv')) {
+      unitLine = lines[startIndex]
+      startIndex++
+    }
+  }
+  
+  console.log(`📋 ${hasHeader ? `Header detected: "${headerLine}"` : 'No header detected'}`)
+  if (unitLine) {
+    console.log(`📏 Units detected: "${unitLine}"`)
+  }
+  
+  // Determine column format
+  let isThreeColumnFormat = false
+  if (hasHeader) {
+    const headerLower = headerLine.toLowerCase()
+    isThreeColumnFormat = headerLower.includes('peak') && headerLower.includes('avg')
+  }
+  
+  console.log(`📊 Format: ${isThreeColumnFormat ? '3-column (Frequency, Peak, Avg)' : '2-column (Frequency, Amplitude)'}`)
   
   for (let i = startIndex; i < lines.length; i++) {
     const line = lines[i].trim()
@@ -198,14 +229,31 @@ const parseCSV = (text: string): Array<{frequency: number, amplitude: number}> =
       columns = line.split(/\s+/) // space separated
     }
     
-    if (columns.length >= 2) {
+    if (isThreeColumnFormat && columns.length >= 3) {
+      // 3-column format: Frequency, Peak, Avg
+      const frequency = parseFloat(columns[0].trim())
+      const peak = parseFloat(columns[1].trim())
+      const avg = parseFloat(columns[2].trim())
+      
+      if (!isNaN(frequency) && !isNaN(peak) && !isNaN(avg)) {
+        data.push({ 
+          frequency, 
+          amplitude: peak, // Use peak as default amplitude for backward compatibility
+          peak,
+          avg
+        })
+      } else {
+        console.warn(`⚠️ Line ${i + 1}: Invalid 3-column data - freq: "${columns[0]}", peak: "${columns[1]}", avg: "${columns[2]}"`)
+      }
+    } else if (columns.length >= 2) {
+      // 2-column format: Frequency, Amplitude (backward compatibility)
       const frequency = parseFloat(columns[0].trim())
       const amplitude = parseFloat(columns[1].trim())
       
       if (!isNaN(frequency) && !isNaN(amplitude)) {
         data.push({ frequency, amplitude })
       } else {
-        console.warn(`⚠️ Line ${i + 1}: Invalid data - freq: "${columns[0]}", amp: "${columns[1]}"`)
+        console.warn(`⚠️ Line ${i + 1}: Invalid 2-column data - freq: "${columns[0]}", amp: "${columns[1]}"`)
       }
     } else {
       console.warn(`⚠️ Line ${i + 1}: Not enough columns - "${line}"`)
@@ -214,12 +262,21 @@ const parseCSV = (text: string): Array<{frequency: number, amplitude: number}> =
   
   console.log(`✅ Successfully parsed ${data.length} valid data points`)
   if (data.length > 0) {
-    console.log('📊 Data range:', {
+    const stats: any = {
       freqMin: Math.min(...data.map(d => d.frequency)),
       freqMax: Math.max(...data.map(d => d.frequency)),
       ampMin: Math.min(...data.map(d => d.amplitude)),
       ampMax: Math.max(...data.map(d => d.amplitude))
-    })
+    }
+    
+    if (isThreeColumnFormat) {
+      stats.peakMin = Math.min(...data.map(d => d.peak || 0))
+      stats.peakMax = Math.max(...data.map(d => d.peak || 0))
+      stats.avgMin = Math.min(...data.map(d => d.avg || 0))
+      stats.avgMax = Math.max(...data.map(d => d.avg || 0))
+    }
+    
+    console.log('📊 Data range:', stats)
   }
   
   return data
