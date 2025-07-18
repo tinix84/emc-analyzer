@@ -4,6 +4,8 @@ import { ref, computed } from 'vue'
 export interface MeasurementPoint {
   frequency: number
   amplitude: number
+  peak?: number
+  avg?: number
 }
 
 export interface EMCStandard {

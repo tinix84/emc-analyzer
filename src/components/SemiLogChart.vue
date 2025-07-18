@@ -44,9 +44,15 @@
 
     <!-- Chart Legend -->
     <div class="flex flex-wrap gap-4 text-sm">
-      <div class="flex items-center space-x-2">
-        <div class="w-4 h-4 bg-blue-500 rounded"></div>
-        <span>Measurement Data</span>
+      <div class="flex items-center space-x-2" v-if="measurementData.length > 0">
+        <div class="w-4 h-4 bg-red-500 rounded" v-if="hasThreeColumnData"></div>
+        <div class="w-4 h-4 bg-blue-500 rounded" v-else></div>
+        <span v-if="hasThreeColumnData">Peak Data</span>
+        <span v-else>Measurement Data</span>
+      </div>
+      <div class="flex items-center space-x-2" v-if="hasThreeColumnData">
+        <div class="w-4 h-4 bg-green-500 rounded"></div>
+        <span>Average Data</span>
       </div>
       <!-- Multiple Masks Legend -->
       <div v-if="showMask && standardMasks && Object.keys(standardMasks).length > 0" class="flex gap-4">
@@ -120,7 +126,7 @@ Chart.register(
 )
 
 const props = defineProps<{
-  measurementData: Array<{frequency: number, amplitude: number}>
+  measurementData: Array<{frequency: number, amplitude: number, peak?: number, avg?: number}>
   standardMasks?: { [key: string]: Array<{frequency: number, amplitude: number}> }
 }>()
 
@@ -128,6 +134,13 @@ const chartCanvas = ref<HTMLCanvasElement>()
 const chart = ref<Chart>()
 const showMask = ref(true)
 const showGrid = ref(true)
+
+// Check if we have 3-column data
+const hasThreeColumnData = computed(() => 
+  props.measurementData.some(point => 
+    point.peak !== undefined && point.avg !== undefined
+  )
+)
 
 // Computed statistics
 const minFreq = computed(() => 
@@ -170,20 +183,60 @@ const createChart = () => {
 
   // Measurement data
   if (props.measurementData.length > 0) {
-    datasets.push({
-      label: 'Measurement Data',
-      data: props.measurementData.map(point => ({
-        x: Number(point.frequency),
-        y: Number(point.amplitude)
-      })),
-      borderColor: 'rgb(59, 130, 246)', // blue-500
-      backgroundColor: 'rgba(59, 130, 246, 0.1)',
-      borderWidth: 2,
-      pointRadius: 1,
-      pointHoverRadius: 4,
-      tension: 0.1,
-      fill: false
-    })
+    // Check if we have 3-column data (peak and avg)
+    const hasThreeColumns = props.measurementData.some(point => 
+      point.peak !== undefined && point.avg !== undefined
+    )
+    
+    if (hasThreeColumns) {
+      // Show Peak data
+      datasets.push({
+        label: 'Peak Data',
+        data: props.measurementData.map(point => ({
+          x: Number(point.frequency),
+          y: Number(point.peak || point.amplitude)
+        })),
+        borderColor: 'rgb(239, 68, 68)', // red-500
+        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+        borderWidth: 2,
+        pointRadius: 1,
+        pointHoverRadius: 4,
+        tension: 0.1,
+        fill: false
+      })
+      
+      // Show Average data
+      datasets.push({
+        label: 'Average Data',
+        data: props.measurementData.map(point => ({
+          x: Number(point.frequency),
+          y: Number(point.avg || point.amplitude)
+        })),
+        borderColor: 'rgb(34, 197, 94)', // green-500
+        backgroundColor: 'rgba(34, 197, 94, 0.1)',
+        borderWidth: 2,
+        pointRadius: 1,
+        pointHoverRadius: 4,
+        tension: 0.1,
+        fill: false
+      })
+    } else {
+      // Show single measurement data (backward compatibility)
+      datasets.push({
+        label: 'Measurement Data',
+        data: props.measurementData.map(point => ({
+          x: Number(point.frequency),
+          y: Number(point.amplitude)
+        })),
+        borderColor: 'rgb(59, 130, 246)', // blue-500
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        borderWidth: 2,
+        pointRadius: 1,
+        pointHoverRadius: 4,
+        tension: 0.1,
+        fill: false
+      })
+    }
   }
 
   // Multiple standard masks (AVG, QP, PK)
