@@ -2,10 +2,10 @@
   <div class="space-y-4">
     <!-- Drag & Drop Area -->
     <div 
-      class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center transition-colors duration-200"
+      class="border-2 border-dashed border-gray-600 rounded-lg p-8 text-center transition-colors duration-200"
       :class="{
-        'border-blue-400 bg-blue-50': isDragOver,
-        'hover:border-gray-400': !isDragOver
+        'border-blue-400 bg-blue-900/20': isDragOver,
+        'hover:border-gray-500': !isDragOver
       }"
       @drop="handleDrop"
       @dragover="handleDragOver"
@@ -15,10 +15,10 @@
       <div class="space-y-4">
         <div class="text-4xl">📁</div>
         <div>
-          <p class="text-lg font-medium text-gray-700">
+          <p class="text-lg font-medium text-white">
             Drag & drop measurement files here
           </p>
-          <p class="text-sm text-gray-500">
+          <p class="text-sm text-gray-300">
             or click to browse files
           </p>
         </div>
@@ -46,25 +46,25 @@
 
     <!-- File List -->
     <div v-if="uploadedFiles.length > 0" class="space-y-2">
-      <h3 class="text-lg font-medium text-gray-700">Uploaded Files:</h3>
+      <h3 class="text-lg font-medium text-white">Uploaded Files:</h3>
       <div class="space-y-2">
         <div 
           v-for="(file, index) in uploadedFiles" 
           :key="index"
-          class="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+          class="flex items-center justify-between p-3 bg-gray-700 rounded-lg border border-gray-600"
         >
           <div class="flex items-center space-x-3">
             <div class="text-2xl">📄</div>
             <div>
-              <div class="font-medium text-gray-700">{{ file.name }}</div>
-              <div class="text-sm text-gray-500">
+              <div class="font-medium text-white">{{ file.name }}</div>
+              <div class="text-sm text-gray-300">
                 {{ formatFileSize(file.size) }} • {{ file.type || 'Unknown type' }}
               </div>
             </div>
           </div>
           <button
             @click="removeFile(index)"
-            class="text-red-500 hover:text-red-700 transition-colors duration-200"
+            class="text-red-400 hover:text-red-300 transition-colors duration-200"
             title="Remove file"
           >
             ❌
@@ -74,7 +74,7 @@
     </div>
 
     <!-- Processing Status -->
-    <div v-if="isProcessing" class="flex items-center space-x-2 text-blue-600">
+    <div v-if="isProcessing" class="flex items-center space-x-2 text-blue-400">
       <div class="animate-spin">⏳</div>
       <span>Processing files...</span>
     </div>
