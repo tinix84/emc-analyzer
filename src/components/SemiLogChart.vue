@@ -261,6 +261,8 @@ const createChart = () => {
             grid: {
               display: showGrid.value
             },
+            min: 0.1,
+            max: 1000,
             ticks: {
               callback: function(value) {
                 return formatFrequency(value as number)
@@ -276,7 +278,9 @@ const createChart = () => {
             },
             grid: {
               display: showGrid.value
-            }
+            },
+            min: 0,
+            max: 100
           }
         }
       }

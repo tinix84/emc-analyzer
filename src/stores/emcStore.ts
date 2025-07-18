@@ -177,7 +177,7 @@ export const useEMCStore = defineStore('emc', () => {
           return
         }
         
-        // Create interpolated points between the defined limit points
+        // Create logarithmically interpolated points between the defined limit points
         for (let i = 0; i < validPoints.length - 1; i++) {
           const [freq1, limit1] = validPoints[i]
           const [freq2, limit2] = validPoints[i + 1]
@@ -185,12 +185,21 @@ export const useEMCStore = defineStore('emc', () => {
           // Add start point
           mask.push({ frequency: freq1, amplitude: limit1 })
           
-          // Add interpolated points for smooth visualization
-          const steps = 50
+          // Logarithmic interpolation for frequency, linear for amplitude
+          const steps = 100 // More steps for smoother curves on log scale
+          const logFreq1 = Math.log10(freq1)
+          const logFreq2 = Math.log10(freq2)
+          
           for (let j = 1; j < steps; j++) {
             const ratio = j / steps
-            const freq = freq1 + (freq2 - freq1) * ratio
+            
+            // Logarithmic interpolation for frequency
+            const logFreq = logFreq1 + (logFreq2 - logFreq1) * ratio
+            const freq = Math.pow(10, logFreq)
+            
+            // Linear interpolation for amplitude (dB values)
             const limit = limit1 + (limit2 - limit1) * ratio
+            
             mask.push({ frequency: freq, amplitude: limit })
           }
         }
@@ -199,8 +208,21 @@ export const useEMCStore = defineStore('emc', () => {
         const lastPoint = validPoints[validPoints.length - 1]
         mask.push({ frequency: lastPoint[0], amplitude: lastPoint[1] })
         
-        masks[limitType] = mask
-        console.log(`✅ Generated ${limitType.toUpperCase()} mask with ${mask.length} points`)
+        // Sort by frequency to ensure proper ordering
+        mask.sort((a, b) => a.frequency - b.frequency)
+        
+        // Add additional logarithmically spaced points for better comparison
+        const firstFreq = validPoints[0][0]
+        const lastFreq = validPoints[validPoints.length - 1][0]
+        const additionalPoints = generateLogSpacedPoints(firstFreq, lastFreq, mask, 50)
+        mask.push(...additionalPoints)
+        
+        // Final sort and remove duplicates
+        mask.sort((a, b) => a.frequency - b.frequency)
+        const uniqueMask = removeDuplicateFrequencies(mask)
+        
+        masks[limitType] = uniqueMask
+        console.log(`✅ Generated ${limitType.toUpperCase()} mask with ${uniqueMask.length} points`)
       })
 
       return masks
@@ -208,6 +230,68 @@ export const useEMCStore = defineStore('emc', () => {
       console.error('❌ Error loading standard masks from JSON:', error)
       return {}
     }
+  }
+
+  // Helper function to generate logarithmically spaced points
+  const generateLogSpacedPoints = (minFreq: number, maxFreq: number, existingMask: MeasurementPoint[], numPoints: number): MeasurementPoint[] => {
+    const logMin = Math.log10(minFreq)
+    const logMax = Math.log10(maxFreq)
+    const logStep = (logMax - logMin) / (numPoints - 1)
+    const additionalPoints: MeasurementPoint[] = []
+    
+    for (let i = 0; i < numPoints; i++) {
+      const logFreq = logMin + i * logStep
+      const freq = Math.pow(10, logFreq)
+      
+      // Interpolate amplitude from existing mask points
+      const amplitude = interpolateAmplitude(freq, existingMask)
+      if (amplitude !== null) {
+        additionalPoints.push({ frequency: freq, amplitude })
+      }
+    }
+    
+    return additionalPoints
+  }
+
+  // Helper function to interpolate amplitude at a given frequency
+  const interpolateAmplitude = (targetFreq: number, maskPoints: MeasurementPoint[]): number | null => {
+    if (maskPoints.length === 0) return null
+    
+    // Find the two closest points for interpolation
+    let lowerPoint = maskPoints[0]
+    let upperPoint = maskPoints[maskPoints.length - 1]
+    
+    for (let i = 0; i < maskPoints.length - 1; i++) {
+      if (maskPoints[i].frequency <= targetFreq && maskPoints[i + 1].frequency >= targetFreq) {
+        lowerPoint = maskPoints[i]
+        upperPoint = maskPoints[i + 1]
+        break
+      }
+    }
+    
+    if (lowerPoint.frequency === upperPoint.frequency) {
+      return lowerPoint.amplitude
+    }
+    
+    // Linear interpolation in amplitude (dB values)
+    const ratio = (targetFreq - lowerPoint.frequency) / (upperPoint.frequency - lowerPoint.frequency)
+    return lowerPoint.amplitude + (upperPoint.amplitude - lowerPoint.amplitude) * ratio
+  }
+
+  // Helper function to remove duplicate frequencies (keep the first occurrence)
+  const removeDuplicateFrequencies = (maskPoints: MeasurementPoint[]): MeasurementPoint[] => {
+    const seen = new Set<number>()
+    const unique: MeasurementPoint[] = []
+    
+    for (const point of maskPoints) {
+      const roundedFreq = Math.round(point.frequency * 1000) / 1000 // Round to 3 decimal places
+      if (!seen.has(roundedFreq)) {
+        seen.add(roundedFreq)
+        unique.push(point)
+      }
+    }
+    
+    return unique
   }
 
   // Legacy function for backward compatibility
@@ -222,12 +306,15 @@ export const useEMCStore = defineStore('emc', () => {
     console.log('🏪 Store: Standard found:', standard.name, 'with', standard.frequencyRanges.length, 'ranges')
     const mask: MeasurementPoint[] = []
     standard.frequencyRanges.forEach(range => {
-      // Generate points for smooth mask visualization
+      // Generate points for smooth mask visualization with logarithmic interpolation
       const steps = 100
-      const freqStep = (range.endFreq - range.startFreq) / steps
+      const logStart = Math.log10(range.startFreq)
+      const logEnd = Math.log10(range.endFreq)
+      const logStep = (logEnd - logStart) / steps
       
       for (let i = 0; i <= steps; i++) {
-        const freq = range.startFreq + (i * freqStep)
+        const logFreq = logStart + (i * logStep)
+        const freq = Math.pow(10, logFreq)
         mask.push({
           frequency: freq,
           amplitude: range.limit
