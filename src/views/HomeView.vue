@@ -54,9 +54,9 @@
     </div>
 
     <!-- Visualization -->
-    <div class="bg-white rounded-lg shadow-md p-6" v-if="measurementData.length > 0">
+    <div class="bg-white rounded-lg shadow-md p-6" v-if="measurementData.length > 0 || selectedStandard">
       <h2 class="text-2xl font-semibold mb-4 flex items-center">
-        📈 Measurement Visualization
+        📈 {{ measurementData.length > 0 ? 'Measurement Visualization' : 'EMC Standard Limits' }}
       </h2>
       <SemiLogChart 
         :measurement-data="measurementData"
