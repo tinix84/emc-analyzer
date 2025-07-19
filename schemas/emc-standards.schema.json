@@ -1,0 +1,135 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "EMC Standards Database",
+  "description": "Schema for EMC standards JSON database",
+  "type": "object",
+  "required": ["standards"],
+  "properties": {
+    "standards": {
+      "type": "object",
+      "patternProperties": {
+        "^[A-Za-z0-9_]+$": {
+          "type": "object",
+          "required": [
+            "name",
+            "description", 
+            "type",
+            "subtype",
+            "measurement_type",
+            "power_range",
+            "class",
+            "limits"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Human readable name of the standard"
+            },
+            "description": {
+              "type": "string", 
+              "minLength": 1,
+              "description": "Detailed description of the standard"
+            },
+            "type": {
+              "type": "string",
+              "enum": ["conducted", "radiated"],
+              "description": "Type of emission measurement"
+            },
+            "subtype": {
+              "type": "string",
+              "enum": [
+                "power_ports",
+                "mains_ports", 
+                "ac_lines",
+                "dc_lines",
+                "telecom_lan_ports",
+                "free_space"
+              ],
+              "description": "Subtype of measurement port or method"
+            },
+            "measurement_type": {
+              "type": "string",
+              "enum": ["voltage", "current", "field_strength"],
+              "description": "Type of measurement (voltage, current, or field strength)"
+            },
+            "distance": {
+              "type": "string",
+              "enum": ["3m", "10m", "N/A"],
+              "description": "Measurement distance for radiated standards"
+            },
+            "power_range": {
+              "type": "string",
+              "description": "Power range specification"
+            },
+            "class": {
+              "type": "string",
+              "enum": ["A", "B", "automotive", "consumer", "non_consumer", "special"],
+              "description": "Equipment class"
+            },
+            "limits": {
+              "type": "object",
+              "minProperties": 1,
+              "patternProperties": {
+                "^(avg|qp|pk)$": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "array",
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "items": [
+                      {
+                        "type": "number",
+                        "minimum": 0,
+                        "description": "Frequency in MHz"
+                      },
+                      {
+                        "type": "number", 
+                        "minimum": 0,
+                        "maximum": 200,
+                        "description": "Emission level in dBμV"
+                      }
+                    ]
+                  }
+                }
+              },
+              "additionalProperties": false,
+              "description": "Emission limits by measurement type (avg/qp/pk)"
+            }
+          },
+          "additionalProperties": false,
+          "allOf": [
+            {
+              "if": {
+                "properties": { "type": { "const": "radiated" } }
+              },
+              "then": {
+                "required": ["distance"],
+                "properties": {
+                  "distance": {
+                    "enum": ["3m", "10m"]
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": { "type": { "const": "conducted" } }
+              },
+              "then": {
+                "properties": {
+                  "distance": {
+                    "enum": ["N/A"]
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

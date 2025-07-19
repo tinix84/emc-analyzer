@@ -39,7 +39,7 @@
           </button>
         </div>
         <div class="text-xs text-gray-400">
-          Supported formats: CSV, TXT, DAT
+          Supported formats: CSV, TXT
         </div>
       </div>
     </div>
