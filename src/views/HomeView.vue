@@ -94,7 +94,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onBeforeUnmount } from 'vue'
 import { useEMCStore } from '@/stores/emcStore'
 import FileUpload from '@/components/FileUpload.vue'
 import StandardSelector from '@/components/StandardSelector.vue'
@@ -107,7 +107,11 @@ const selectedStandard = ref('')
 const measurementData = ref<Array<{frequency: number, amplitude: number}>>([])
 const standardMasks = ref<{ [key: string]: Array<{frequency: number, amplitude: number}> }>({})
 
-// Load multiple masks when standard changes
+// Throttling for standard changes
+const lastStandardChange = ref(0)
+const standardChangeTimeout = ref<number | null>(null)
+
+// Load multiple masks when standard changes (with throttling)
 watch(selectedStandard, async (newStandard) => {
   if (newStandard) {
     try {
@@ -134,8 +138,27 @@ const handleFilesUploaded = (files: File[]) => {
 }
 
 const handleStandardChanged = (standard: string) => {
+  const now = Date.now()
+  
+  // Throttle rapid changes to prevent chart rendering issues
+  if (now - lastStandardChange.value < 200) {
+    // If called too quickly, clear existing timeout and schedule new one
+    if (standardChangeTimeout.value) {
+      clearTimeout(standardChangeTimeout.value)
+    }
+    
+    standardChangeTimeout.value = window.setTimeout(() => {
+      console.log('🎯 Standard changed from', selectedStandard.value, 'to', standard, '(throttled)')
+      selectedStandard.value = standard
+      lastStandardChange.value = Date.now()
+      standardChangeTimeout.value = null
+    }, 300)
+    return
+  }
+  
   console.log('🎯 Standard changed from', selectedStandard.value, 'to', standard)
   selectedStandard.value = standard
+  lastStandardChange.value = now
   console.log('📊 Loading multiple masks for standard:', standard)
 }
 
@@ -281,4 +304,12 @@ const parseCSV = (text: string): Array<{frequency: number, amplitude: number, pe
   
   return data
 }
+
+// Cleanup on unmount
+onBeforeUnmount(() => {
+  if (standardChangeTimeout.value) {
+    clearTimeout(standardChangeTimeout.value)
+    standardChangeTimeout.value = null
+  }
+})
 </script>

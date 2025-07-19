@@ -135,6 +135,11 @@ const chart = ref<Chart>()
 const showMask = ref(true)
 const showGrid = ref(true)
 
+// Update management to prevent race conditions
+const isUpdating = ref(false)
+const updateTimeout = ref<number | null>(null)
+const pendingDestroy = ref(false)
+
 // Check if we have 3-column data
 const hasThreeColumnData = computed(() => 
   props.measurementData.some(point => 
@@ -200,109 +205,120 @@ const dynamicYMax = computed(() => {
 })
 
 const createChart = () => {
-  if (!chartCanvas.value) return
+  // Safety checks
+  if (!chartCanvas.value || pendingDestroy.value || isUpdating.value) {
+    return
+  }
 
   const ctx = chartCanvas.value.getContext('2d')
-  if (!ctx) return
-
-  // Clear any existing chart
-  if (chart.value) {
-    chart.value.destroy()
-    chart.value = undefined
-  }
-
-  const datasets: any[] = []
-
-  // Measurement data
-  if (props.measurementData.length > 0) {
-    // Check if we have 3-column data (peak and avg)
-    const hasThreeColumns = props.measurementData.some(point => 
-      point.peak !== undefined && point.avg !== undefined
-    )
-    
-    if (hasThreeColumns) {
-      // Show Peak data
-      datasets.push({
-        label: 'Peak Data',
-        data: props.measurementData.map(point => ({
-          x: Number(point.frequency),
-          y: Number(point.peak || point.amplitude)
-        })),
-        borderColor: 'rgb(239, 68, 68)', // red-500
-        backgroundColor: 'rgba(239, 68, 68, 0.1)',
-        borderWidth: 2,
-        pointRadius: 1,
-        pointHoverRadius: 4,
-        tension: 0.1,
-        fill: false
-      })
-      
-      // Show Average data
-      datasets.push({
-        label: 'Average Data',
-        data: props.measurementData.map(point => ({
-          x: Number(point.frequency),
-          y: Number(point.avg || point.amplitude)
-        })),
-        borderColor: 'rgb(34, 197, 94)', // green-500
-        backgroundColor: 'rgba(34, 197, 94, 0.1)',
-        borderWidth: 2,
-        pointRadius: 1,
-        pointHoverRadius: 4,
-        tension: 0.1,
-        fill: false
-      })
-    } else {
-      // Show single measurement data (backward compatibility)
-      datasets.push({
-        label: 'Measurement Data',
-        data: props.measurementData.map(point => ({
-          x: Number(point.frequency),
-          y: Number(point.amplitude)
-        })),
-        borderColor: 'rgb(59, 130, 246)', // blue-500
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-        borderWidth: 2,
-        pointRadius: 1,
-        pointHoverRadius: 4,
-        tension: 0.1,
-        fill: false
-      })
-    }
-  }
-
-  // Multiple standard masks (AVG, QP, PK)
-  if (showMask.value && props.standardMasks && Object.keys(props.standardMasks).length > 0) {
-    const maskColors = {
-      avg: { border: 'rgb(34, 197, 94)', background: 'rgba(34, 197, 94, 0.1)' }, // green-500
-      qp: { border: 'rgb(249, 115, 22)', background: 'rgba(249, 115, 22, 0.1)' }, // orange-500
-      pk: { border: 'rgb(147, 51, 234)', background: 'rgba(147, 51, 234, 0.1)' }  // purple-500
-    }
-
-    Object.entries(props.standardMasks).forEach(([maskType, maskData]) => {
-      if (maskData && maskData.length > 0) {
-        const colors = maskColors[maskType as keyof typeof maskColors] || 
-                      { border: 'rgb(156, 163, 175)', background: 'rgba(156, 163, 175, 0.1)' }
-        
-        datasets.push({
-          label: `${maskType.toUpperCase()} Limit`,
-          data: maskData.map(point => ({
-            x: Number(point.frequency),
-            y: Number(point.amplitude)
-          })),
-          borderColor: colors.border,
-          backgroundColor: colors.background,
-          borderWidth: 2,
-          pointRadius: 0,
-          tension: 0.1,
-          fill: false,
-          borderDash: maskType === 'pk' ? [5, 5] : maskType === 'qp' ? [10, 5] : []
-        })
-      }
-    })
+  if (!ctx) {
+    console.error('❌ Could not get canvas context')
+    return
   }
 
   try {
+    // Clear any existing chart
+    if (chart.value) {
+      try {
+        chart.value.destroy()
+      } catch (destroyError) {
+        console.warn('⚠️ Error destroying existing chart:', destroyError)
+      }
+      chart.value = undefined
+    }
+
+    const datasets: any[] = []
+
+    // Measurement data
+    if (props.measurementData.length > 0) {
+      // Check if we have 3-column data (peak and avg)
+      const hasThreeColumns = props.measurementData.some(point => 
+        point.peak !== undefined && point.avg !== undefined
+      )
+      
+      if (hasThreeColumns) {
+        // Show Peak data
+        datasets.push({
+          label: 'Peak Data',
+          data: props.measurementData.map(point => ({
+            x: Number(point.frequency),
+            y: Number(point.peak || point.amplitude)
+          })),
+          borderColor: 'rgb(239, 68, 68)', // red-500
+          backgroundColor: 'rgba(239, 68, 68, 0.1)',
+          borderWidth: 2,
+          pointRadius: 1,
+          pointHoverRadius: 4,
+          tension: 0.1,
+          fill: false
+        })
+        
+        // Show Average data
+        datasets.push({
+          label: 'Average Data',
+          data: props.measurementData.map(point => ({
+            x: Number(point.frequency),
+            y: Number(point.avg || point.amplitude)
+          })),
+          borderColor: 'rgb(34, 197, 94)', // green-500
+          backgroundColor: 'rgba(34, 197, 94, 0.1)',
+          borderWidth: 2,
+          pointRadius: 1,
+          pointHoverRadius: 4,
+          tension: 0.1,
+          fill: false
+        })
+      } else {
+        // Show single measurement data (backward compatibility)
+        datasets.push({
+          label: 'Measurement Data',
+          data: props.measurementData.map(point => ({
+            x: Number(point.frequency),
+            y: Number(point.amplitude)
+          })),
+          borderColor: 'rgb(59, 130, 246)', // blue-500
+          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          borderWidth: 2,
+          pointRadius: 1,
+          pointHoverRadius: 4,
+          tension: 0.1,
+          fill: false
+        })
+      }
+    }
+
+    // Multiple standard masks (AVG, QP, PK)
+    if (showMask.value && props.standardMasks && Object.keys(props.standardMasks).length > 0) {
+      const maskColors = {
+        avg: { border: 'rgb(34, 197, 94)', background: 'rgba(34, 197, 94, 0.1)' }, // green-500
+        qp: { border: 'rgb(249, 115, 22)', background: 'rgba(249, 115, 22, 0.1)' }, // orange-500
+        pk: { border: 'rgb(147, 51, 234)', background: 'rgba(147, 51, 234, 0.1)' }  // purple-500
+      }
+
+      Object.entries(props.standardMasks).forEach(([maskType, maskData]) => {
+        if (maskData && maskData.length > 0) {
+          const colors = maskColors[maskType as keyof typeof maskColors] || 
+                        { border: 'rgb(156, 163, 175)', background: 'rgba(156, 163, 175, 0.1)' }
+          
+          datasets.push({
+            label: `${maskType.toUpperCase()} Limit`,
+            data: maskData.map(point => ({
+              x: Number(point.frequency),
+              y: Number(point.amplitude)
+            })),
+            borderColor: colors.border,
+            backgroundColor: colors.background,
+            borderWidth: 2,
+            pointRadius: 0,
+            tension: 0.1,
+            fill: false,
+            borderDash: maskType === 'pk' ? [5, 5] : maskType === 'qp' ? [10, 5] : []
+          })
+        }
+      })
+    }
+
+    // Create chart with defensive options
     chart.value = new Chart(ctx, {
       type: 'line',
       data: { 
@@ -311,6 +327,7 @@ const createChart = () => {
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        animation: false, // Disable animations to prevent recursion
         parsing: {
           xAxisKey: 'x',
           yAxisKey: 'y'
@@ -375,111 +392,156 @@ const createChart = () => {
   } catch (error) {
     console.error('❌ Error creating chart:', error)
     // Fallback: show simple message
-    if (ctx) {
-      ctx.fillStyle = '#666'
-      ctx.font = '16px Arial'
-      ctx.fillText('Chart unavailable - check console for details', 50, 50)
+    if (ctx && !pendingDestroy.value) {
+      try {
+        ctx.clearRect(0, 0, chartCanvas.value!.width, chartCanvas.value!.height)
+        ctx.fillStyle = '#666'
+        ctx.font = '16px Arial'
+        ctx.fillText('Chart unavailable - check console for details', 50, 50)
+      } catch (fallbackError) {
+        console.error('❌ Even fallback rendering failed:', fallbackError)
+      }
     }
   }
 }
 
 const updateChart = () => {
-  if (!chart.value) return
-
-  console.log('📈 Updating chart with:')
-  console.log('  - Measurement data points:', props.measurementData.length)
-  console.log('  - Standard masks:', props.standardMasks ? Object.keys(props.standardMasks) : 'none')
-  console.log('  - Show mask:', showMask.value)
-
-  const datasets: any[] = []
-
-  // Measurement data
-  if (props.measurementData.length > 0) {
-    datasets.push({
-      label: 'Measurement Data',
-      data: props.measurementData.map(point => ({
-        x: Number(point.frequency),
-        y: Number(point.amplitude)
-      })),
-      borderColor: 'rgb(59, 130, 246)',
-      backgroundColor: 'rgba(59, 130, 246, 0.1)',
-      borderWidth: 2,
-      pointRadius: 1,
-      pointHoverRadius: 4,
-      tension: 0.1,
-      fill: false
-    })
+  // Prevent concurrent updates
+  if (isUpdating.value || pendingDestroy.value || !chart.value) {
+    return
   }
 
-  // Multiple standard masks (AVG, QP, PK)
-  if (showMask.value && props.standardMasks && Object.keys(props.standardMasks).length > 0) {
-    const maskColors = {
-      avg: { border: 'rgb(34, 197, 94)', background: 'rgba(34, 197, 94, 0.1)' }, // green-500
-      qp: { border: 'rgb(249, 115, 22)', background: 'rgba(249, 115, 22, 0.1)' }, // orange-500
-      pk: { border: 'rgb(147, 51, 234)', background: 'rgba(147, 51, 234, 0.1)' }  // purple-500
-    }
-
-    Object.entries(props.standardMasks).forEach(([maskType, maskData]) => {
-      if (maskData && maskData.length > 0) {
-        const colors = maskColors[maskType as keyof typeof maskColors] || 
-                      { border: 'rgb(156, 163, 175)', background: 'rgba(156, 163, 175, 0.1)' }
-        
-        datasets.push({
-          label: `${maskType.toUpperCase()} Limit`,
-          data: maskData.map(point => ({
-            x: Number(point.frequency),
-            y: Number(point.amplitude)
-          })),
-          borderColor: colors.border,
-          backgroundColor: colors.background,
-          borderWidth: 2,
-          pointRadius: 0,
-          tension: 0.1,
-          fill: false,
-          borderDash: maskType === 'pk' ? [5, 5] : maskType === 'qp' ? [10, 5] : []
-        })
-      }
-    })
-  }
+  isUpdating.value = true
 
   try {
+    console.log('📈 Updating chart with:')
+    console.log('  - Measurement data points:', props.measurementData.length)
+    console.log('  - Standard masks:', props.standardMasks ? Object.keys(props.standardMasks) : 'none')
+    console.log('  - Show mask:', showMask.value)
+
+    const datasets: any[] = []
+
+    // Measurement data
+    if (props.measurementData.length > 0) {
+      datasets.push({
+        label: 'Measurement Data',
+        data: props.measurementData.map(point => ({
+          x: Number(point.frequency),
+          y: Number(point.amplitude)
+        })),
+        borderColor: 'rgb(59, 130, 246)',
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        borderWidth: 2,
+        pointRadius: 1,
+        pointHoverRadius: 4,
+        tension: 0.1,
+        fill: false
+      })
+    }
+
+    // Multiple standard masks (AVG, QP, PK)
+    if (showMask.value && props.standardMasks && Object.keys(props.standardMasks).length > 0) {
+      const maskColors = {
+        avg: { border: 'rgb(34, 197, 94)', background: 'rgba(34, 197, 94, 0.1)' }, // green-500
+        qp: { border: 'rgb(249, 115, 22)', background: 'rgba(249, 115, 22, 0.1)' }, // orange-500
+        pk: { border: 'rgb(147, 51, 234)', background: 'rgba(147, 51, 234, 0.1)' }  // purple-500
+      }
+
+      Object.entries(props.standardMasks).forEach(([maskType, maskData]) => {
+        if (maskData && maskData.length > 0) {
+          const colors = maskColors[maskType as keyof typeof maskColors] || 
+                        { border: 'rgb(156, 163, 175)', background: 'rgba(156, 163, 175, 0.1)' }
+          
+          datasets.push({
+            label: `${maskType.toUpperCase()} Limit`,
+            data: maskData.map(point => ({
+              x: Number(point.frequency),
+              y: Number(point.amplitude)
+            })),
+            borderColor: colors.border,
+            backgroundColor: colors.background,
+            borderWidth: 2,
+            pointRadius: 0,
+            tension: 0.1,
+            fill: false,
+            borderDash: maskType === 'pk' ? [5, 5] : maskType === 'qp' ? [10, 5] : []
+          })
+        }
+      })
+    }
+
     // Safely update chart data
-    chart.value.data.datasets = datasets
-    
-    // Update grid settings
-    if (chart.value.options.scales?.x?.grid) {
-      chart.value.options.scales.x.grid.display = showGrid.value
+    if (chart.value && !pendingDestroy.value) {
+      chart.value.data.datasets = datasets
+      
+      // Update grid settings
+      if (chart.value.options.scales?.x?.grid) {
+        chart.value.options.scales.x.grid.display = showGrid.value
+      }
+      if (chart.value.options.scales?.y?.grid) {
+        chart.value.options.scales.y.grid.display = showGrid.value
+      }
+      
+      // Update Y-axis maximum dynamically
+      if (chart.value.options.scales?.y) {
+        chart.value.options.scales.y.max = dynamicYMax.value
+      }
+
+      // Use 'none' mode to prevent animations and reduce recursion risk
+      chart.value.update('none')
     }
-    if (chart.value.options.scales?.y?.grid) {
-      chart.value.options.scales.y.grid.display = showGrid.value
-    }
-    
-    // Update Y-axis maximum dynamically
-    if (chart.value.options.scales?.y) {
-      chart.value.options.scales.y.max = dynamicYMax.value
-    }
-    
-    // Use 'none' mode to prevent animations and reduce recursion risk
-    chart.value.update('none')
   } catch (error) {
-    console.error('⚠️ Chart update failed, recreating chart:', error)
-    // If update fails, recreate the chart safely
+    console.error('⚠️ Chart update failed:', error)
+    // Schedule recreation only if we're not already updating
+    if (!pendingDestroy.value) {
+      scheduleChartRecreation()
+    }
+  } finally {
+    isUpdating.value = false
+  }
+}
+
+// Debounced update function
+const debouncedUpdateChart = () => {
+  if (updateTimeout.value) {
+    clearTimeout(updateTimeout.value)
+  }
+  
+  updateTimeout.value = window.setTimeout(() => {
+    updateChart()
+    updateTimeout.value = null
+  }, 150) // 150ms debounce
+}
+
+// Safe chart recreation
+const scheduleChartRecreation = () => {
+  if (pendingDestroy.value) return
+  
+  pendingDestroy.value = true
+  
+  setTimeout(() => {
     try {
       if (chart.value) {
         chart.value.destroy()
         chart.value = undefined
       }
-      setTimeout(() => createChart(), 100) // Delay recreation to prevent recursion
-    } catch (recreateError) {
-      console.error('❌ Chart recreation also failed:', recreateError)
+      
+      // Wait a bit more before recreation
+      setTimeout(() => {
+        pendingDestroy.value = false
+        createChart()
+      }, 200)
+    } catch (error) {
+      console.error('❌ Chart destruction failed:', error)
+      pendingDestroy.value = false
     }
-  }
+  }, 100)
 }
 
 const resetZoom = () => {
-  if (chart.value) {
+  if (chart.value && !isUpdating.value && !pendingDestroy.value) {
     // Simple reset by recreating the chart
-    createChart()
+    scheduleChartRecreation()
   }
 }
 
@@ -503,10 +565,10 @@ const formatFrequency = (freq: number): string => {
   }
 }
 
-// Watchers with better error handling
+// Watchers with debouncing to prevent rapid updates
 watch([() => props.measurementData, () => props.standardMasks], () => {
   try {
-    updateChart()
+    debouncedUpdateChart()
   } catch (error) {
     console.error('⚠️ Error in chart watcher:', error)
   }
@@ -514,11 +576,11 @@ watch([() => props.measurementData, () => props.standardMasks], () => {
 
 watch([showMask, showGrid], () => {
   try {
-    updateChart()
+    debouncedUpdateChart()
   } catch (error) {
     console.error('⚠️ Error in options watcher:', error)
   }
-})
+}, { immediate: false })
 
 onMounted(() => {
   try {
@@ -529,8 +591,24 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  // Clear any pending timeouts
+  if (updateTimeout.value) {
+    clearTimeout(updateTimeout.value)
+    updateTimeout.value = null
+  }
+  
+  // Set flag to prevent any pending operations
+  pendingDestroy.value = true
+  isUpdating.value = false
+  
+  // Destroy chart safely
   if (chart.value) {
-    chart.value.destroy()
+    try {
+      chart.value.destroy()
+      chart.value = undefined
+    } catch (error) {
+      console.error('⚠️ Error destroying chart:', error)
+    }
   }
 })
 </script>
