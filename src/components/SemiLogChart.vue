@@ -44,28 +44,38 @@
 
     <!-- Chart Legend -->
     <div class="flex flex-wrap gap-4 text-sm text-white">
-      <div class="flex items-center space-x-2" v-if="measurementData.length > 0">
-        <div class="w-4 h-4 bg-red-500 rounded" v-if="hasThreeColumnData"></div>
-        <div class="w-4 h-4 bg-blue-500 rounded" v-else></div>
-        <span v-if="hasThreeColumnData">Peak Data</span>
-        <span v-else>Measurement Data</span>
+      <!-- Peak Data -->
+      <div class="flex items-center space-x-2" v-if="measurementData.length > 0 && measurementData.some(point => point.peak !== undefined)">
+        <div class="w-4 h-4 bg-blue-500 rounded"></div>
+        <span>Peak Data</span>
       </div>
-      <div class="flex items-center space-x-2" v-if="hasThreeColumnData">
+      <!-- QP Data -->
+      <div class="flex items-center space-x-2" v-if="measurementData.length > 0 && measurementData.some(point => point.qp !== undefined)">
         <div class="w-4 h-4 bg-green-500 rounded"></div>
+        <span>QP Data</span>
+      </div>
+      <!-- Average Data -->
+      <div class="flex items-center space-x-2" v-if="measurementData.length > 0 && measurementData.some(point => point.avg !== undefined)">
+        <div class="w-4 h-4 bg-red-500 rounded"></div>
         <span>Average Data</span>
       </div>
-      <!-- Multiple Masks Legend -->
+      <!-- Single Measurement Data (fallback) -->
+      <div class="flex items-center space-x-2" v-if="measurementData.length > 0 && !hasThreeColumnData">
+        <div class="w-4 h-4 bg-blue-500 rounded"></div>
+        <span>Measurement Data</span>
+      </div>
+      <!-- Multiple Masks Legend with updated colors -->
       <div v-if="showMask && standardMasks && Object.keys(standardMasks).length > 0" class="flex gap-4">
         <div v-if="standardMasks.avg && standardMasks.avg.length > 0" class="flex items-center space-x-2">
-          <div class="w-4 h-4 bg-green-500 rounded"></div>
+          <div class="w-4 h-4 bg-red-500 rounded"></div>
           <span>AVG Limit</span>
         </div>
         <div v-if="standardMasks.qp && standardMasks.qp.length > 0" class="flex items-center space-x-2">
-          <div class="w-4 h-4 bg-orange-500 rounded"></div>
+          <div class="w-4 h-4 bg-green-500 rounded"></div>
           <span>QP Limit</span>
         </div>
         <div v-if="standardMasks.pk && standardMasks.pk.length > 0" class="flex items-center space-x-2">
-          <div class="w-4 h-4 bg-purple-500 rounded"></div>
+          <div class="w-4 h-4 bg-blue-500 rounded"></div>
           <span>PK Limit</span>
         </div>
       </div>
@@ -126,7 +136,7 @@ Chart.register(
 )
 
 const props = defineProps<{
-  measurementData: Array<{frequency: number, amplitude: number, peak?: number, avg?: number}>
+  measurementData: Array<{frequency: number, amplitude: number, peak?: number, avg?: number, qp?: number}>
   standardMasks?: { [key: string]: Array<{frequency: number, amplitude: number}> }
 }>()
 
@@ -143,7 +153,9 @@ const pendingDestroy = ref(false)
 // Check if we have 3-column data
 const hasThreeColumnData = computed(() => 
   props.measurementData.some(point => 
-    point.peak !== undefined && point.avg !== undefined
+    (point.peak !== undefined && point.avg !== undefined) ||
+    (point.peak !== undefined && point.qp !== undefined) ||
+    (point.avg !== undefined && point.qp !== undefined)
   )
 )
 
@@ -180,8 +192,8 @@ const dynamicYMax = computed(() => {
   if (props.measurementData.length > 0) {
     const measurementMax = Math.max(
       ...props.measurementData.map(d => d.amplitude),
-      // Include peak and avg if available
-      ...props.measurementData.flatMap(d => [d.peak, d.avg].filter(v => v !== undefined) as number[])
+      // Include peak, avg, and qp if available
+      ...props.measurementData.flatMap(d => [d.peak, d.avg, d.qp].filter(v => v !== undefined) as number[])
     )
     maxValue = Math.max(maxValue, measurementMax)
   }
@@ -231,43 +243,65 @@ const createChart = () => {
 
     // Measurement data
     if (props.measurementData.length > 0) {
-      // Check if we have 3-column data (peak and avg)
-      const hasThreeColumns = props.measurementData.some(point => 
-        point.peak !== undefined && point.avg !== undefined
+      // Check if we have multi-column data (peak, avg, qp)
+      const hasMultiColumns = props.measurementData.some(point => 
+        point.peak !== undefined || point.avg !== undefined || point.qp !== undefined
       )
       
-      if (hasThreeColumns) {
-        // Show Peak data
-        datasets.push({
-          label: 'Peak Data',
-          data: props.measurementData.map(point => ({
-            x: Number(point.frequency),
-            y: Number(point.peak || point.amplitude)
-          })),
-          borderColor: 'rgb(239, 68, 68)', // red-500
-          backgroundColor: 'rgba(239, 68, 68, 0.1)',
-          borderWidth: 2,
-          pointRadius: 1,
-          pointHoverRadius: 4,
-          tension: 0.1,
-          fill: false
-        })
+      if (hasMultiColumns) {
+        // Show Peak data if available
+        if (props.measurementData.some(point => point.peak !== undefined)) {
+          datasets.push({
+            label: 'Peak Data',
+            data: props.measurementData.map(point => ({
+              x: Number(point.frequency),
+              y: Number(point.peak || point.amplitude)
+            })),
+            borderColor: 'rgb(59, 130, 246)', // blue-500 - matches PK Limit
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            borderWidth: 2,
+            pointRadius: 1,
+            pointHoverRadius: 4,
+            tension: 0.1,
+            fill: false
+          })
+        }
         
-        // Show Average data
-        datasets.push({
-          label: 'Average Data',
-          data: props.measurementData.map(point => ({
-            x: Number(point.frequency),
-            y: Number(point.avg || point.amplitude)
-          })),
-          borderColor: 'rgb(34, 197, 94)', // green-500
-          backgroundColor: 'rgba(34, 197, 94, 0.1)',
-          borderWidth: 2,
-          pointRadius: 1,
-          pointHoverRadius: 4,
-          tension: 0.1,
-          fill: false
-        })
+        // Show QP data if available
+        if (props.measurementData.some(point => point.qp !== undefined)) {
+          datasets.push({
+            label: 'QP Data',
+            data: props.measurementData.map(point => ({
+              x: Number(point.frequency),
+              y: Number(point.qp || point.amplitude)
+            })),
+            borderColor: 'rgb(34, 197, 94)', // green-500 - matches QP Limit
+            backgroundColor: 'rgba(34, 197, 94, 0.1)',
+            borderWidth: 2,
+            pointRadius: 1,
+            pointHoverRadius: 4,
+            tension: 0.1,
+            fill: false
+          })
+        }
+        
+        // Show Average data if available
+        if (props.measurementData.some(point => point.avg !== undefined)) {
+          datasets.push({
+            label: 'Average Data',
+            data: props.measurementData.map(point => ({
+              x: Number(point.frequency),
+              y: Number(point.avg || point.amplitude)
+            })),
+            borderColor: 'rgb(239, 68, 68)', // red-500 - matches AVG Limit
+            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+            borderWidth: 2,
+            pointRadius: 1,
+            pointHoverRadius: 4,
+            tension: 0.1,
+            fill: false
+          })
+        }
       } else {
         // Show single measurement data (backward compatibility)
         datasets.push({
@@ -287,12 +321,12 @@ const createChart = () => {
       }
     }
 
-    // Multiple standard masks (AVG, QP, PK)
+    // Multiple standard masks (AVG=red, QP=green, PK=blue) with double thickness
     if (showMask.value && props.standardMasks && Object.keys(props.standardMasks).length > 0) {
       const maskColors = {
-        avg: { border: 'rgb(34, 197, 94)', background: 'rgba(34, 197, 94, 0.1)' }, // green-500
-        qp: { border: 'rgb(249, 115, 22)', background: 'rgba(249, 115, 22, 0.1)' }, // orange-500
-        pk: { border: 'rgb(147, 51, 234)', background: 'rgba(147, 51, 234, 0.1)' }  // purple-500
+        avg: { border: 'rgb(239, 68, 68)', background: 'rgba(239, 68, 68, 0.1)' }, // red-500
+        qp: { border: 'rgb(34, 197, 94)', background: 'rgba(34, 197, 94, 0.1)' }, // green-500
+        pk: { border: 'rgb(59, 130, 246)', background: 'rgba(59, 130, 246, 0.1)' }  // blue-500
       }
 
       Object.entries(props.standardMasks).forEach(([maskType, maskData]) => {
@@ -308,11 +342,11 @@ const createChart = () => {
             })),
             borderColor: colors.border,
             backgroundColor: colors.background,
-            borderWidth: 2,
+            borderWidth: 4, // Double thickness for standards
             pointRadius: 0,
             tension: 0.1,
             fill: false,
-            borderDash: maskType === 'pk' ? [5, 5] : maskType === 'qp' ? [10, 5] : []
+            borderDash: maskType === 'pk' ? [5, 5] : [] // Only PK is dotted, AVG and QP are continuous
           })
         }
       })
@@ -439,12 +473,12 @@ const updateChart = () => {
       })
     }
 
-    // Multiple standard masks (AVG, QP, PK)
+    // Multiple standard masks (AVG=red, QP=green, PK=blue) with double thickness
     if (showMask.value && props.standardMasks && Object.keys(props.standardMasks).length > 0) {
       const maskColors = {
-        avg: { border: 'rgb(34, 197, 94)', background: 'rgba(34, 197, 94, 0.1)' }, // green-500
-        qp: { border: 'rgb(249, 115, 22)', background: 'rgba(249, 115, 22, 0.1)' }, // orange-500
-        pk: { border: 'rgb(147, 51, 234)', background: 'rgba(147, 51, 234, 0.1)' }  // purple-500
+        avg: { border: 'rgb(239, 68, 68)', background: 'rgba(239, 68, 68, 0.1)' }, // red-500
+        qp: { border: 'rgb(34, 197, 94)', background: 'rgba(34, 197, 94, 0.1)' }, // green-500
+        pk: { border: 'rgb(59, 130, 246)', background: 'rgba(59, 130, 246, 0.1)' }  // blue-500
       }
 
       Object.entries(props.standardMasks).forEach(([maskType, maskData]) => {
@@ -460,11 +494,11 @@ const updateChart = () => {
             })),
             borderColor: colors.border,
             backgroundColor: colors.background,
-            borderWidth: 2,
+            borderWidth: 4, // Double thickness for standards
             pointRadius: 0,
             tension: 0.1,
             fill: false,
-            borderDash: maskType === 'pk' ? [5, 5] : maskType === 'qp' ? [10, 5] : []
+            borderDash: maskType === 'pk' ? [5, 5] : [] // Only PK is dotted, AVG and QP are continuous
           })
         }
       })
