@@ -1,0 +1,60 @@
+name: Validate EMC Standards JSON
+
+on:
+  push:
+    branches: [ main, dev ]
+    paths:
+      - 'public/emc-standards.json'
+      - 'scripts/validate-json.js'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'public/emc-standards.json'
+      - 'scripts/validate-json.js'
+
+jobs:
+  validate-json:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        
+    - name: Validate JSON structure
+      run: node scripts/validate-json.js
+      
+    - name: Check JSON file size
+      run: |
+        JSON_SIZE=$(wc -c < public/emc-standards.json)
+        echo "JSON file size: $JSON_SIZE bytes"
+        if [ $JSON_SIZE -gt 512000 ]; then
+          echo "❌ JSON file is too large (>500KB)"
+          exit 1
+        fi
+        echo "✅ JSON file size is acceptable"
+        
+    - name: Lint JSON syntax
+      run: |
+        if ! python -m json.tool public/emc-standards.json > /dev/null; then
+          echo "❌ JSON syntax validation failed"
+          exit 1
+        fi
+        echo "✅ JSON syntax is valid"
+        
+    - name: Count standards
+      run: |
+        STANDARD_COUNT=$(node -e "
+          const fs = require('fs');
+          const data = JSON.parse(fs.readFileSync('public/emc-standards.json'));
+          console.log(Object.keys(data.standards).length);
+        ")
+        echo "Standards count: $STANDARD_COUNT"
+        if [ $STANDARD_COUNT -lt 20 ]; then
+          echo "⚠️ Warning: Less than 20 standards found"
+        fi
+        echo "✅ Standards count check complete"

@@ -1,30 +1,37 @@
 <template>
   <div class="space-y-3">
-    <!-- Standard Selection - Single Column Layout -->
-    <div class="grid grid-cols-1 gap-3">
-      <div
-        v-for="standard in standards"
-        :key="standard.id"
-        class="border rounded-lg p-3 cursor-pointer transition-all duration-200"
-        :class="{
-          'border-blue-500 bg-blue-900/20': selectedStandard === standard.id,
-          'border-gray-600 hover:border-gray-500 bg-gray-700/50': selectedStandard !== standard.id
-        }"
-        @click="selectStandard(standard.id)"
-      >
-        <div class="flex items-center space-x-3">
-          <div class="text-lg">📋</div>
-          <div class="flex-1">
-            <h3 class="font-semibold text-white">{{ standard.name }}</h3>
-            <p class="text-sm text-gray-300">{{ standard.description }}</p>
-          </div>
-          
-          <!-- Selection Indicator -->
-          <div 
-            v-if="selectedStandard === standard.id"
-            class="text-blue-400 text-lg"
-          >
-            ✅
+    <!-- Standards Counter -->
+    <div class="text-sm text-gray-400 text-center">
+      {{ standards.length }} EMC standards available
+    </div>
+    
+    <!-- Standard Selection - Single Column Layout with Scrollbar -->
+    <div class="max-h-80 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 pr-2">
+      <div class="grid grid-cols-1 gap-3">
+        <div
+          v-for="standard in standards"
+          :key="standard.id"
+          class="border rounded-lg p-3 cursor-pointer transition-all duration-200"
+          :class="{
+            'border-blue-500 bg-blue-900/20': selectedStandard === standard.id,
+            'border-gray-600 hover:border-gray-500 bg-gray-700/50': selectedStandard !== standard.id
+          }"
+          @click="selectStandard(standard.id)"
+        >
+          <div class="flex items-center space-x-3">
+            <div class="text-lg">📋</div>
+            <div class="flex-1">
+              <h3 class="font-semibold text-white">{{ standard.name }}</h3>
+              <p class="text-sm text-gray-300">{{ standard.description }}</p>
+            </div>
+            
+            <!-- Selection Indicator -->
+            <div 
+              v-if="selectedStandard === standard.id"
+              class="text-blue-400 text-lg"
+            >
+              ✅
+            </div>
           </div>
         </div>
       </div>
@@ -34,7 +41,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useEMCStore } from '@/stores/emcStore'
+import { useEMCStore } from '../stores/emcStore'
 
 const props = defineProps<{
   selectedStandard: string

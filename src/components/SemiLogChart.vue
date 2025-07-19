@@ -167,6 +167,38 @@ const maxAmplitude = computed(() =>
     : 0
 )
 
+// Dynamic Y-axis maximum calculation
+const dynamicYMax = computed(() => {
+  let maxValue = 0
+
+  // Get maximum from measurement data
+  if (props.measurementData.length > 0) {
+    const measurementMax = Math.max(
+      ...props.measurementData.map(d => d.amplitude),
+      // Include peak and avg if available
+      ...props.measurementData.flatMap(d => [d.peak, d.avg].filter(v => v !== undefined) as number[])
+    )
+    maxValue = Math.max(maxValue, measurementMax)
+  }
+
+  // Get maximum from standard masks
+  if (props.standardMasks && Object.keys(props.standardMasks).length > 0) {
+    Object.values(props.standardMasks).forEach(maskData => {
+      if (maskData && maskData.length > 0) {
+        const maskMax = Math.max(...maskData.map(point => point.amplitude))
+        maxValue = Math.max(maxValue, maskMax)
+      }
+    })
+  }
+
+  // Add 20% margin and round up to nearest 10
+  const withMargin = maxValue * 1.2
+  const result = Math.max(Math.ceil(withMargin / 10) * 10, 100) // Minimum 100 dBμV
+  
+  console.log(`📊 Dynamic Y-axis max: ${result} dBμV (based on max value: ${maxValue.toFixed(1)} dBμV)`)
+  return result
+})
+
 const createChart = () => {
   if (!chartCanvas.value) return
 
@@ -333,7 +365,7 @@ const createChart = () => {
               display: showGrid.value
             },
             min: 0,
-            max: 100
+            max: dynamicYMax.value
           }
         }
       }
@@ -420,6 +452,11 @@ const updateChart = () => {
     }
     if (chart.value.options.scales?.y?.grid) {
       chart.value.options.scales.y.grid.display = showGrid.value
+    }
+    
+    // Update Y-axis maximum dynamically
+    if (chart.value.options.scales?.y) {
+      chart.value.options.scales.y.max = dynamicYMax.value
     }
     
     // Use 'none' mode to prevent animations and reduce recursion risk

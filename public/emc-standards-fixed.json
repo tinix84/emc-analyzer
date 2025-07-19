@@ -1,0 +1,265 @@
+{
+  "standards": {
+    "CISPR11_Group1_above75kVA_ClassA_Conducted_DC_Power": {
+      "name": "CISPR 11 Group 1 (>75kVA), Class A",
+      "description": "Group 1 (>75kVA), Class A. Conducted Emission Voltage Limits [DC Power Ports]",
+      "limits": {
+        "avg": [
+          [0.15, 122], [0.5, 122], [30, 105]
+        ],
+        "qp": [
+          [0.15, 132], [0.5, 132], [30, 105]
+        ]
+      }
+    },
+    "CISPR11_Group1_20kVA_to_75kVA_ClassA_Conducted_DC_Power": {
+      "name": "CISPR 11 Group 1 (>20kVA, ≤75kVA), Class A",
+      "description": "Group 1 (>20kVA, ≤75kVA), Class A. Conducted Emission Voltage Limits [DC Power Ports]",
+      "limits": {
+        "avg": [
+          [0.15, 116], [0.5, 116], [5, 96], [30, 76]
+        ],
+        "qp": [
+          [0.15, 116], [0.5, 112], [5, 106], [30, 92]
+        ]
+      }
+    },
+    "CISPR11_Group1_below20kVA_ClassA_Conducted_DC_Power": {
+      "name": "CISPR 11 Group 1 (≤20kVA), Class A",
+      "description": "Group 1 (≤20kVA), Class A. Conducted Emission Voltage Limits [DC Power Ports]",
+      "limits": {
+        "avg": [
+          [0.15, 84], [0.5, 84], [5, 76], [30, 76]
+        ],
+        "qp": [
+          [0.15, 97], [0.5, 97], [5, 89], [30, 89]
+        ]
+      }
+    },
+    "CISPR11_Group1_ClassB_Conducted_DC_Power": {
+      "name": "CISPR 11 Group 1, Class B",
+      "description": "Group 1, Class B. Conducted Emission Voltage Limits [DC Power Ports]",
+      "limits": {
+        "avg": [
+          [0.15, 84], [0.5, 74], [5, 64], [30, 64]
+        ],
+        "qp": [
+          [0.15, 74], [0.5, 74], [5, 74], [30, 74]
+        ]
+      }
+    },
+    "CISPR11_Group1_above75kVA_ClassA_Conducted_DC_Current": {
+      "name": "CISPR 11 Group 1 (>75kVA), Class A",
+      "description": "Group 1 (>75kVA), Class A. Conducted Emission Current Limits [DC Power Ports]",
+      "limits": {
+        "avg": [
+          [0.15, 78], [0.5, 78], [30, 61]
+        ],
+        "qp": [
+          [0.15, 88], [0.5, 88], [30, 61]
+        ]
+      }
+    },
+    "CISPR11_Group1_20kVA_to_75kVA_ClassA_Conducted_DC_Current": {
+      "name": "CISPR 11 Group 1 (>20kVA, ≤75kVA), Class A", 
+      "description": "Group 1 (>20kVA, ≤75kVA), Class A. Conducted Emission Current Limits [DC Power Ports]",
+      "limits": {
+        "avg": [
+          [0.15, 72], [0.5, 72], [5, 52], [30, 32]
+        ],
+        "qp": [
+          [0.15, 72], [0.5, 67], [5, 62], [30, 48]
+        ]
+      }
+    },
+    "CISPR11_Group1_above75kVA_Group2_above75kVA_ClassA_Conducted_Mains": {
+      "name": "CISPR 11 Group 1 (>75kVA), Group 2 (>75kVA), Class A",
+      "description": "Group 1 (>75kVA), Group 2 (>75kVA), Class A. Conducted Emission Limits [Mains Ports]",
+      "limits": {
+        "avg": [
+          [0.15, 120], [0.5, 120], [0.5001, 115], [30, 115]
+        ],
+        "qp": [
+          [0.15, 130], [0.5, 130], [0.5001, 125], [5, 125]
+        ]
+      }
+    },
+    "CISPR11_Group1_20kVA_to_75kVA_Group2_below75kVA_ClassA_Conducted_Mains": {
+      "name": "CISPR 11 Group 1 (>20kVA, ≤75kVA), Group 2 (≤75kVA), Class A", 
+      "description": "Group 1 (>20kVA, ≤75kVA), Group 2 (≤75kVA), Class A. Conducted Emission Limits [Mains Ports]",
+      "limits": {
+        "avg": [
+          [0.15, 90], [0.5, 90], [0.5001, 86], [30, 86]
+        ],
+        "qp": [
+          [0.15, 100], [0.5, 100], [0.5001, 105], [30, 105]
+        ]
+      }
+    },
+    "CISPR11_Group1_below20kVA_Conducted_Mains": {
+      "name": "CISPR 11 Group 1 (≤20kVA)",
+      "description": "Group 1 (≤20kVA). Conducted Emission Limits [Mains Ports]",
+      "limits": {
+        "avg": [
+          [0.15, 66], [0.5, 66], [5, 60], [30, 60]
+        ],
+        "qp": [
+          [0.15, 79], [0.5, 76], [5, 73], [30, 73]
+        ]
+      }
+    },
+    "CISPR11_Group1_Group2_ClassB_Conducted_Mains": {
+      "name": "CISPR 11 Group 1 and Group 2, Class B",
+      "description": "Group 1 and Group 2, Class B. Conducted Emission Limits [Mains Ports]",
+      "limits": {
+        "avg": [
+          [0.15, 56], [0.5, 56], [5, 46], [30, 50]
+        ],
+        "qp": [
+          [0.15, 56], [0.5, 56], [5, 56], [30, 56]
+        ]
+      }
+    },
+    "ECE_R10_Conducted_AC_lines": {
+      "name": "ECE R-10 2012 AC line",
+      "description": "Table 9: Maximum allowed radiofrequency conducted disturbances on AC power lines",
+      "limits": {
+        "avg": [
+          [0.15, 56], [0.5, 46], [0.5001, 46], [5, 46], [5.001, 50], [30, 50]
+        ],
+        "qp": [
+          [0.15, 66], [0.5, 56], [0.5001, 56], [5, 56], [5.001, 60], [30, 60]
+        ]
+      }
+    },
+    "ECE_R10_Conducted_DC_lines": {
+      "name": "ECE R-10 2012 DC line",
+      "description": "Table 10: Maximum allowed radiofrequency conducted disturbances on DC power lines",
+      "limits": {
+        "avg": [
+          [0.15, 66], [0.5, 66], [0.5001, 60], [30, 60]
+        ],
+        "qp": [
+          [0.15, 79], [0.5, 79], [0.5001, 66], [30, 66]
+        ]
+      }
+    },
+    "EN55032_CLASS_A": {
+      "name": "EN 55032 Class A",
+      "description": "Information technology equipment - Radio disturbance characteristics - Limits and methods of measurement - Class A",
+      "limits": {
+        "avg": [
+          [0.15, 66], [0.5, 56], [5, 56], [30, 30], [230, 37], [1000, 37]
+        ],
+        "qp": [
+          [0.15, 79], [0.5, 73], [5, 73], [30, 40], [230, 47], [1000, 47]
+        ],
+        "pk": [
+          [0.15, 99], [0.5, 93], [5, 93], [30, 60], [230, 67], [1000, 67]
+        ]
+      }
+    },
+    "EN55032_CLASS_B": {
+      "name": "EN 55032 Class B",
+      "description": "Information technology equipment - Radio disturbance characteristics - Limits and methods of measurement - Class B",
+      "limits": {
+        "avg": [
+          [0.15, 56], [0.5, 46], [5, 46], [30, 20], [230, 27], [1000, 27]
+        ],
+        "qp": [
+          [0.15, 66], [0.5, 56], [5, 56], [30, 30], [230, 37], [1000, 37]
+        ],
+        "pk": [
+          [0.15, 86], [0.5, 76], [5, 76], [30, 50], [230, 57], [1000, 57]
+        ]
+      }
+    },
+    "CISPR32_CLASS_A": {
+      "name": "CISPR 32 Class A",
+      "description": "Electromagnetic compatibility of multimedia equipment - Emission requirements - Class A",
+      "limits": {
+        "avg": [
+          [0.15, 66], [0.5, 66], [0.5001, 60], [30, 60]
+        ],
+        "qp": [
+          [0.15, 79], [0.5, 79], [0.5001, 73], [30, 73]
+        ]
+      }
+    },
+    "CISPR32_CLASS_B": {
+      "name": "CISPR 32 Class B", 
+      "description": "Electromagnetic compatibility of multimedia equipment - Emission requirements - Class B",
+      "limits": {
+        "avg": [
+          [0.15, 56], [0.5, 46], [0.5001, 46], [5, 46], [5.001, 50], [30, 50]
+        ],
+        "qp": [
+          [0.15, 66], [0.5, 56], [0.5001, 56], [5, 56], [5.001, 60], [30, 60]
+        ]
+      }
+    },
+    "CISPR11_Group1_above20kVA_ClassA_Radiated_3m": {
+      "name": "CISPR 11 Group 1 (>20kVA), Class A, 3m distance",
+      "description": "Group 1 (>20kVA), Class A. Radiated Emission Limits [30MHz-1GHz, 3m distance]",
+      "limits": {
+        "qp": [
+          [30, 60], [230, 60], [1000, 60]
+        ]
+      }
+    },
+    "CISPR11_Group1_below20kVA_ClassA_Radiated_10m": {
+      "name": "CISPR 11 Group 1 (≤20kVA), Class A, 10m distance",
+      "description": "Group 1 (≤20kVA), Class A. Radiated Emission Limits [30MHz-1GHz, 10m distance]",
+      "limits": {
+        "qp": [
+          [30, 50], [230, 50], [1000, 50]
+        ]
+      }
+    },
+    "CISPR11_Group1_below20kVA_ClassA_Radiated_3m": {
+      "name": "CISPR 11 Group 1 (≤20kVA), Class A, 3m distance", 
+      "description": "Group 1 (≤20kVA), Class A. Radiated Emission Limits [30MHz-1GHz, 3m distance]",
+      "limits": {
+        "qp": [
+          [30, 57], [230, 57], [1000, 57]
+        ]
+      }
+    },
+    "CISPR11_Group1_ClassB_Radiated_10m": {
+      "name": "CISPR 11 Group 1, Class B, 10m distance",
+      "description": "Group 1, Class B. Radiated Emission Limits [30MHz-1GHz, 10m distance]", 
+      "limits": {
+        "qp": [
+          [30, 40], [230, 40], [1000, 40]
+        ]
+      }
+    },
+    "CISPR11_Group1_ClassB_Radiated_3m": {
+      "name": "CISPR 11 Group 1, Class B, 3m distance",
+      "description": "Group 1, Class B. Radiated Emission Limits [30MHz-1GHz, 3m distance]",
+      "limits": {
+        "qp": [
+          [30, 47], [230, 47], [1000, 47]
+        ]
+      }
+    },
+    "CISPR11_Group1_above75kVA_Group2_above75kVA_ClassA_Radiated_10m": {
+      "name": "CISPR 11 Group 1 (>75kVA), Group 2 (>75kVA), Class A, 10m distance",
+      "description": "Group 1 (>75kVA), Group 2 (>75kVA), Class A. Radiated Emission Limits [30MHz-1GHz, 10m distance]",
+      "limits": {
+        "qp": [
+          [30, 30], [230, 37], [1000, 37]
+        ]
+      }
+    },
+    "CISPR11_Group1_Group2_ClassB_Radiated_10m": {
+      "name": "CISPR 11 Group 1 and Group 2, Class B, 10m distance",
+      "description": "Group 1 and Group 2, Class B. Radiated Emission Limits [30MHz-1GHz, 10m distance]",
+      "limits": {
+        "qp": [
+          [30, 20], [230, 27], [1000, 27]
+        ]
+      }
+    }
+  }
+}

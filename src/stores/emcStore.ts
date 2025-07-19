@@ -78,19 +78,41 @@ export const useEMCStore = defineStore('emc', () => {
       for (const [key, standard] of Object.entries(data.standards)) {
         const stdData = standard as any
         
-        // Convert the avg limits to frequency ranges for backward compatibility
-        const frequencyRanges = stdData.limits.avg.map((point: [number, number]) => ({
-          startFreq: point[0],
-          endFreq: point[0], // For now, we'll use the same frequency as start and end
-          limit: point[1]
-        }))
+        // Use the first available limit type (avg, qp, or pk) for frequency ranges
+        let frequencyRanges: Array<{startFreq: number, endFreq: number, limit: number}> = []
         
-        loadedStandards.push({
-          id: key,
-          name: stdData.name,
-          description: stdData.description,
-          frequencyRanges
-        })
+        if (stdData.limits.avg && stdData.limits.avg.length > 0) {
+          frequencyRanges = stdData.limits.avg.map((point: [number, number]) => ({
+            startFreq: point[0],
+            endFreq: point[0], // For now, we'll use the same frequency as start and end
+            limit: point[1]
+          }))
+        } else if (stdData.limits.qp && stdData.limits.qp.length > 0) {
+          frequencyRanges = stdData.limits.qp.map((point: [number, number]) => ({
+            startFreq: point[0],
+            endFreq: point[0],
+            limit: point[1]
+          }))
+        } else if (stdData.limits.pk && stdData.limits.pk.length > 0) {
+          frequencyRanges = stdData.limits.pk
+            .filter((point: [number, number | null]) => point[1] !== null)
+            .map((point: [number, number]) => ({
+              startFreq: point[0],
+              endFreq: point[0],
+              limit: point[1]
+            }))
+        }
+        
+        if (frequencyRanges.length > 0) {
+          loadedStandards.push({
+            id: key,
+            name: stdData.name,
+            description: stdData.description,
+            frequencyRanges
+          })
+        } else {
+          console.warn('⚠️ Standard', key, 'has no valid limits, skipping')
+        }
       }
       
       standards.value = loadedStandards
@@ -113,6 +135,7 @@ export const useEMCStore = defineStore('emc', () => {
           ]
         }
       ]
+      console.log('🔄 Using fallback standard')
     }
   }
 
