@@ -45,13 +45,13 @@
         </div>
       </div>
 
-      <!-- Detailed Status for 3-column data -->
-      <div v-if="complianceStatus.hasThreeColumns" class="grid md:grid-cols-2 gap-4">
-        <div class="p-4 bg-red-900/20 rounded-lg border border-red-600">
+      <!-- Detailed Status for multi-column data -->
+      <div v-if="complianceStatus.hasMultiColumns" class="grid md:grid-cols-3 gap-4">
+        <div class="p-4 bg-blue-900/20 rounded-lg border border-blue-600">
           <div class="text-center">
-            <div class="text-2xl mb-2">🔴</div>
-            <div class="font-semibold text-lg text-red-300">{{ complianceStatus.peakViolations }}</div>
-            <div class="text-sm text-red-400">
+            <div class="text-2xl mb-2">�</div>
+            <div class="font-semibold text-lg text-blue-300">{{ complianceStatus.peakViolations || 0 }}</div>
+            <div class="text-sm text-blue-400">
               Peak Violations
             </div>
           </div>
@@ -60,8 +60,18 @@
         <div class="p-4 bg-green-900/20 rounded-lg border border-green-600">
           <div class="text-center">
             <div class="text-2xl mb-2">🟢</div>
-            <div class="font-semibold text-lg text-green-300">{{ complianceStatus.avgViolations }}</div>
+            <div class="font-semibold text-lg text-green-300">{{ complianceStatus.qpViolations || 0 }}</div>
             <div class="text-sm text-green-400">
+              QP Violations
+            </div>
+          </div>
+        </div>
+
+        <div class="p-4 bg-red-900/20 rounded-lg border border-red-600">
+          <div class="text-center">
+            <div class="text-2xl mb-2">🔴</div>
+            <div class="font-semibold text-lg text-red-300">{{ complianceStatus.avgViolations || 0 }}</div>
+            <div class="text-sm text-red-400">
               Average Violations
             </div>
           </div>
@@ -174,31 +184,62 @@
         ⚠️ Compliance Violations
       </h3>
       
-      <!-- Separate tables for 3-column data -->
+      <!-- Separate tables for multi-column data -->
       <div v-if="violations.hasThreeColumns" class="space-y-6">
         <!-- Peak Violations -->
         <div v-if="violations.peak.length > 0">
-          <h4 class="font-medium text-red-200 mb-2">🔴 Peak Violations ({{ violations.peak.length }})</h4>
+          <h4 class="font-medium text-blue-200 mb-2">� Peak Violations ({{ violations.peak.length }})</h4>
           <div class="overflow-x-auto">
             <table class="min-w-full text-sm">
               <thead>
-                <tr class="bg-red-900/30">
-                  <th class="px-3 py-2 text-left text-red-200">Frequency</th>
-                  <th class="px-3 py-2 text-left text-red-200">Peak Value</th>
-                  <th class="px-3 py-2 text-left text-red-200">Limit</th>
-                  <th class="px-3 py-2 text-left text-red-200">Violation</th>
+                <tr class="bg-blue-900/30">
+                  <th class="px-3 py-2 text-left text-blue-200">Frequency</th>
+                  <th class="px-3 py-2 text-left text-blue-200">Peak Value</th>
+                  <th class="px-3 py-2 text-left text-blue-200">Limit</th>
+                  <th class="px-3 py-2 text-left text-blue-200">Violation</th>
                 </tr>
               </thead>
               <tbody>
                 <tr 
                   v-for="(violation, index) in violations.peak.slice(0, 5)"
                   :key="index"
-                  class="border-b border-red-700"
+                  class="border-b border-blue-700"
                 >
-                  <td class="px-3 py-2 text-red-300">{{ formatFrequency(violation.frequency) }}</td>
-                  <td class="px-3 py-2 text-red-300 font-medium">{{ violation.measured.toFixed(2) }} dBμV</td>
-                  <td class="px-3 py-2 text-red-300">{{ violation.limit.toFixed(2) }} dBμV</td>
-                  <td class="px-3 py-2 text-red-300 font-medium">
+                  <td class="px-3 py-2 text-blue-300">{{ formatFrequency(violation.frequency) }}</td>
+                  <td class="px-3 py-2 text-blue-300 font-medium">{{ violation.measured.toFixed(2) }} dBμV</td>
+                  <td class="px-3 py-2 text-blue-300">{{ violation.limit.toFixed(2) }} dBμV</td>
+                  <td class="px-3 py-2 text-blue-300 font-medium">
+                    +{{ violation.excess.toFixed(2) }} dB
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <!-- QP Violations -->
+        <div v-if="violations.qp && violations.qp.length > 0">
+          <h4 class="font-medium text-green-200 mb-2">🟢 QP Violations ({{ violations.qp.length }})</h4>
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+              <thead>
+                <tr class="bg-green-900/30">
+                  <th class="px-3 py-2 text-left text-green-200">Frequency</th>
+                  <th class="px-3 py-2 text-left text-green-200">QP Value</th>
+                  <th class="px-3 py-2 text-left text-green-200">Limit</th>
+                  <th class="px-3 py-2 text-left text-green-200">Violation</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr 
+                  v-for="(violation, index) in violations.qp.slice(0, 5)"
+                  :key="index"
+                  class="border-b border-green-700"
+                >
+                  <td class="px-3 py-2 text-green-300">{{ formatFrequency(violation.frequency) }}</td>
+                  <td class="px-3 py-2 text-green-300 font-medium">{{ violation.measured.toFixed(2) }} dBμV</td>
+                  <td class="px-3 py-2 text-green-300">{{ violation.limit.toFixed(2) }} dBμV</td>
+                  <td class="px-3 py-2 text-green-300 font-medium">
                     +{{ violation.excess.toFixed(2) }} dB
                   </td>
                 </tr>
@@ -209,7 +250,7 @@
         
         <!-- Average Violations -->
         <div v-if="violations.average.length > 0">
-          <h4 class="font-medium text-red-200 mb-2">🟢 Average Violations ({{ violations.average.length }})</h4>
+          <h4 class="font-medium text-red-200 mb-2">� Average Violations ({{ violations.average.length }})</h4>
           <div class="overflow-x-auto">
             <table class="min-w-full text-sm">
               <thead>
@@ -299,7 +340,7 @@ import { computed, ref, watch } from 'vue'
 import { useEMCStore } from '../stores/emcStore'
 
 const props = defineProps<{
-  data: Array<{frequency: number, amplitude: number, peak?: number, avg?: number}>
+  data: Array<{frequency: number, amplitude: number, peak?: number, avg?: number, qp?: number}>
   standard: string
 }>()
 
@@ -368,7 +409,7 @@ const amplitudeStats = computed(() => {
   
   // Check if we have 3-column data
   const hasThreeColumns = props.data.some(point => 
-    point.peak !== undefined && point.avg !== undefined
+    point.peak !== undefined || point.avg !== undefined || point.qp !== undefined
   )
   
   if (hasThreeColumns) {
@@ -411,12 +452,20 @@ const violations = computed(() => {
   }
   
   const hasThreeColumns = props.data.some(point => 
-    point.peak !== undefined && point.avg !== undefined
+    point.peak !== undefined || point.avg !== undefined || point.qp !== undefined
   )
   
   if (hasThreeColumns) {
     // For 3-column data, use PK mask for Peak and AVG mask for Average
     const peakViolations: Array<{
+      frequency: number
+      measured: number
+      limit: number
+      excess: number
+      type: string
+    }> = []
+    
+    const qpViolations: Array<{
       frequency: number
       measured: number
       limit: number
@@ -435,10 +484,12 @@ const violations = computed(() => {
     if (currentMasks.value) {
       // Use interpolated masks for proper comparison
       const pkMask = currentMasks.value.pk || currentMasks.value.PK
+      const qpMask = currentMasks.value.qp || currentMasks.value.QP
       const avgMask = currentMasks.value.avg || currentMasks.value.AVG
       
       console.log('📊 DataSummary: Using masks for violation analysis')
       console.log('  - PK mask available:', !!pkMask, pkMask?.length, 'points')
+      console.log('  - QP mask available:', !!qpMask, qpMask?.length, 'points')
       console.log('  - AVG mask available:', !!avgMask, avgMask?.length, 'points')
       
       props.data.forEach((point, index) => {
@@ -454,6 +505,22 @@ const violations = computed(() => {
               limit: peakLimit,
               excess: point.peak - peakLimit,
               type: 'Peak'
+            })
+          }
+        }
+        
+        // Check QP violations against QP mask
+        if (qpMask && point.qp !== undefined) {
+          const qpLimit = interpolateLimit(point.frequency, qpMask)
+          console.log(`  Point ${index}: Freq=${point.frequency}MHz, QP=${point.qp}dBuV, QP_limit=${qpLimit?.toFixed(2)}dBuV`)
+          if (qpLimit !== null && point.qp > qpLimit) {
+            console.log(`    ⚠️ QP violation: ${point.qp} > ${qpLimit.toFixed(2)} (+${(point.qp - qpLimit).toFixed(2)}dB)`)
+            qpViolations.push({
+              frequency: point.frequency,
+              measured: point.qp,
+              limit: qpLimit,
+              excess: point.qp - qpLimit,
+              type: 'QP'
             })
           }
         }
@@ -495,6 +562,17 @@ const violations = computed(() => {
             })
           }
           
+          // Check QP violations
+          if (point.qp !== undefined && point.qp > applicableRange.limit) {
+            qpViolations.push({
+              frequency: point.frequency,
+              measured: point.qp,
+              limit: applicableRange.limit,
+              excess: point.qp - applicableRange.limit,
+              type: 'QP'
+            })
+          }
+          
           // Check Average violations
           const avgValue = point.avg || point.amplitude
           if (avgValue > applicableRange.limit) {
@@ -510,11 +588,12 @@ const violations = computed(() => {
       })
     }
     
-    // Combine both violation types - this ensures we get BOTH Peak and Average violations
-    const combined = [...peakViolations, ...avgViolations].sort((a, b) => b.excess - a.excess)
+    // Combine all violation types - Peak, QP, and Average violations
+    const combined = [...peakViolations, ...qpViolations, ...avgViolations].sort((a, b) => b.excess - a.excess)
     
     return {
       peak: peakViolations.sort((a, b) => b.excess - a.excess),
+      qp: qpViolations.sort((a, b) => b.excess - a.excess),
       average: avgViolations.sort((a, b) => b.excess - a.excess),
       combined,
       hasThreeColumns: true

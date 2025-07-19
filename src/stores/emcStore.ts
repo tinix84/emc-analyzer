@@ -6,6 +6,7 @@ export interface MeasurementPoint {
   amplitude: number
   peak?: number
   avg?: number
+  qp?: number
 }
 
 export interface EMCStandard {
@@ -357,40 +358,58 @@ export const useEMCStore = defineStore('emc', () => {
       return null
     }
 
-    // Check if we have 3-column data
-    const hasThreeColumns = measurementData.value.some(point => 
-      point.peak !== undefined && point.avg !== undefined
+    // Check if we have multi-column data
+    const hasMultiColumns = measurementData.value.some(point => 
+      point.peak !== undefined || point.avg !== undefined || point.qp !== undefined
     )
 
-    if (hasThreeColumns) {
-      // Separate compliance for Peak and Average
+    if (hasMultiColumns) {
+      // Separate compliance for Peak, QP, and Average
       const peakViolations = measurementData.value.filter(point => {
+        if (point.peak === undefined) return false
         const applicableRange = currentStandard.value!.frequencyRanges.find(
           range => point.frequency >= range.startFreq && point.frequency <= range.endFreq
         )
         
         if (!applicableRange) return false
         
-        return (point.peak || point.amplitude) > applicableRange.limit
+        return point.peak > applicableRange.limit
+      })
+
+      const qpViolations = measurementData.value.filter(point => {
+        if (point.qp === undefined) return false
+        const applicableRange = currentStandard.value!.frequencyRanges.find(
+          range => point.frequency >= range.startFreq && point.frequency <= range.endFreq
+        )
+        
+        if (!applicableRange) return false
+        
+        return point.qp > applicableRange.limit
       })
 
       const avgViolations = measurementData.value.filter(point => {
+        if (point.avg === undefined) return false
         const applicableRange = currentStandard.value!.frequencyRanges.find(
           range => point.frequency >= range.startFreq && point.frequency <= range.endFreq
         )
         
         if (!applicableRange) return false
         
-        return (point.avg || point.amplitude) > applicableRange.limit
+        return point.avg > applicableRange.limit
       })
 
       return {
-        isCompliant: peakViolations.length === 0 && avgViolations.length === 0,
-        violations: peakViolations.length + avgViolations.length,
-        totalPoints: measurementData.value.length * 2, // Peak + Avg
+        isCompliant: peakViolations.length === 0 && qpViolations.length === 0 && avgViolations.length === 0,
+        violations: peakViolations.length + qpViolations.length + avgViolations.length,
+        totalPoints: [
+          measurementData.value.filter(p => p.peak !== undefined).length,
+          measurementData.value.filter(p => p.qp !== undefined).length,
+          measurementData.value.filter(p => p.avg !== undefined).length
+        ].reduce((sum, count) => sum + count, 0),
         peakViolations: peakViolations.length,
+        qpViolations: qpViolations.length,
         avgViolations: avgViolations.length,
-        hasThreeColumns: true
+        hasMultiColumns: true
       }
     } else {
       // Standard compliance for 2-column data
@@ -408,7 +427,7 @@ export const useEMCStore = defineStore('emc', () => {
         isCompliant: violations.length === 0,
         violations: violations.length,
         totalPoints: measurementData.value.length,
-        hasThreeColumns: false
+        hasMultiColumns: false
       }
     }
   })

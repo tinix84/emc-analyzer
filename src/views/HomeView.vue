@@ -195,10 +195,10 @@ const processFile = async (file: File) => {
   }
 }
 
-const parseCSV = (text: string): Array<{frequency: number, amplitude: number, peak?: number, avg?: number}> => {
+const parseCSV = (text: string): Array<{frequency: number, amplitude: number, peak?: number, avg?: number, qp?: number}> => {
   console.log('🔍 Parsing CSV data...')
   const lines = text.split('\n').filter(line => line.trim())
-  const data: Array<{frequency: number, amplitude: number, peak?: number, avg?: number}> = []
+  const data: Array<{frequency: number, amplitude: number, peak?: number, avg?: number, qp?: number}> = []
   
   console.log(`📝 Found ${lines.length} lines`)
   
@@ -211,7 +211,7 @@ const parseCSV = (text: string): Array<{frequency: number, amplitude: number, pe
   // Check for header patterns
   for (let i = 0; i < Math.min(3, lines.length); i++) {
     const line = lines[i].toLowerCase()
-    if (line.includes('frequency') || line.includes('peak') || line.includes('avg')) {
+    if (line.includes('frequency') || line.includes('peak') || line.includes('avg') || line.includes('qp')) {
       headerLine = lines[i]
       hasHeader = true
       startIndex = i + 1
@@ -235,12 +235,14 @@ const parseCSV = (text: string): Array<{frequency: number, amplitude: number, pe
   
   // Determine column format
   let isThreeColumnFormat = false
+  let isFourColumnFormat = false
   if (hasHeader) {
     const headerLower = headerLine.toLowerCase()
-    isThreeColumnFormat = headerLower.includes('peak') && headerLower.includes('avg')
+    isFourColumnFormat = headerLower.includes('peak') && headerLower.includes('qp') && headerLower.includes('avg')
+    isThreeColumnFormat = !isFourColumnFormat && (headerLower.includes('peak') && headerLower.includes('avg'))
   }
   
-  console.log(`📊 Format: ${isThreeColumnFormat ? '3-column (Frequency, Peak, Avg)' : '2-column (Frequency, Amplitude)'}`)
+  console.log(`📊 Format: ${isFourColumnFormat ? '4-column (Frequency, Peak, QP, Avg)' : isThreeColumnFormat ? '3-column (Frequency, Peak, Avg)' : '2-column (Frequency, Amplitude)'}`)
   
   for (let i = startIndex; i < lines.length; i++) {
     const line = lines[i].trim()
@@ -252,7 +254,25 @@ const parseCSV = (text: string): Array<{frequency: number, amplitude: number, pe
       columns = line.split(/\s+/) // space separated
     }
     
-    if (isThreeColumnFormat && columns.length >= 3) {
+    if (isFourColumnFormat && columns.length >= 4) {
+      // 4-column format: Frequency, Peak, QP, Avg
+      const frequency = parseFloat(columns[0].trim())
+      const peak = parseFloat(columns[1].trim())
+      const qp = parseFloat(columns[2].trim())
+      const avg = parseFloat(columns[3].trim())
+      
+      if (!isNaN(frequency) && !isNaN(peak) && !isNaN(qp) && !isNaN(avg)) {
+        data.push({ 
+          frequency, 
+          amplitude: peak, // Use peak as default amplitude for backward compatibility
+          peak,
+          qp,
+          avg
+        })
+      } else {
+        console.warn(`⚠️ Line ${i + 1}: Invalid 4-column data - freq: "${columns[0]}", peak: "${columns[1]}", qp: "${columns[2]}", avg: "${columns[3]}"`)
+      }
+    } else if (isThreeColumnFormat && columns.length >= 3) {
       // 3-column format: Frequency, Peak, Avg
       const frequency = parseFloat(columns[0].trim())
       const peak = parseFloat(columns[1].trim())
@@ -292,11 +312,16 @@ const parseCSV = (text: string): Array<{frequency: number, amplitude: number, pe
       ampMax: Math.max(...data.map(d => d.amplitude))
     }
     
-    if (isThreeColumnFormat) {
+    if (isFourColumnFormat || isThreeColumnFormat) {
       stats.peakMin = Math.min(...data.map(d => d.peak || 0))
       stats.peakMax = Math.max(...data.map(d => d.peak || 0))
       stats.avgMin = Math.min(...data.map(d => d.avg || 0))
       stats.avgMax = Math.max(...data.map(d => d.avg || 0))
+      
+      if (isFourColumnFormat) {
+        stats.qpMin = Math.min(...data.map(d => d.qp || 0))
+        stats.qpMax = Math.max(...data.map(d => d.qp || 0))
+      }
     }
     
     console.log('📊 Data range:', stats)
